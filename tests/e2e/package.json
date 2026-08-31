@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test --config playwright.config.js"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
+    "@playwright/test": "1.62.1"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "version": 4,
+  "title": "Pass_straight_intersecting_vehicle_from_right_passing_straight",
+  "description": "A car clears the crossing before a nearby cyclist reaches the same point.",
+  "map_path": null,
+  "detection_gaps": [],
+  "additional_scenario_information": {
+    "file_header": {
+      "author": "scenario.generator",
+      "description": "Pass_straight_intersecting_vehicle_from_right_passing_straight default scenario created with scenario.generator",
+      "revMajor": 1,
+      "revMinor": 1
+    },
+    "xosc_map_path": "",
+    "simulation_time_condition_factor": 1,
+    "postprocessing_scripts": [],
+    "postprocessing_parameters": {}
+  },
+  "vehicles": [
+    {
+      "name": "car",
+      "actor_type": "vehicle",
+      "dimensions": {
+        "length_m": 4.5,
+        "width_m": 1.8,
+        "height_m": 1.6,
+        "actor_type": "vehicle"
+      },
+      "waypoints": [
+        {"time_s": 0.0, "x_m": -40.0, "y_m": 0.0},
+        {"time_s": 2.0, "x_m": -20.0, "y_m": 0.0},
+        {"time_s": 4.0, "x_m": 0.0, "y_m": 0.0},
+        {"time_s": 6.0, "x_m": 20.0, "y_m": 0.0},
+        {"time_s": 8.0, "x_m": 40.0, "y_m": 0.0}
+      ]
+    },
+    {
+      "name": "cyclist",
+      "actor_type": "cyclist",
+      "dimensions": {
+        "length_m": 1.8,
+        "width_m": 0.65,
+        "height_m": 1.7,
+        "actor_type": "cyclist"
+      },
+      "waypoints": [
+        {"time_s": 0.0, "x_m": 0.0, "y_m": -12.0},
+        {"time_s": 2.0, "x_m": 0.0, "y_m": -8.0},
+        {"time_s": 4.0, "x_m": 0.0, "y_m": -4.0},
+        {"time_s": 6.0, "x_m": 0.0, "y_m": 0.0},
+        {"time_s": 8.0, "x_m": 0.0, "y_m": 4.0},
+        {"time_s": 10.0, "x_m": 0.0, "y_m": 8.0},
+        {"time_s": 12.0, "x_m": 0.0, "y_m": 12.0}
+      ]
+    }
+  ]
+}

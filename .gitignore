@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+
+# Python tooling
+.pytest_cache/
+.ruff_cache/
+pytest-report.xml
+
+# Browser tests
+tests/e2e/node_modules/
+tests/e2e/playwright-report/
+tests/e2e/test-results/
+
+# Generated application files
+output/
+results/
+
+# Local configuration
+.env*
+!.env.example
+.vscode/

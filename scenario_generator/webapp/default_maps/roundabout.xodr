@@ -1,0 +1,933 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenDRIVE>
+    <header revMajor="1" revMinor="4" name="Custom roundabout" version="1.0" date="2026-08-24T00:00:00" north="40.000000000000" south="-40.000000000000" east="40.000000000000" west="-40.000000000000" vendor="Custom"/>
+
+    <road name="Roundabout East to North" length="8.377580409573" id="1" junction="-1">
+        <link>
+            <predecessor elementType="junction" elementId="100"/>
+            <successor elementType="junction" elementId="101"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="10.875693444440" y="5.071419140888" hdg="2.007128639793" length="8.377580409573">
+                <arc curvature="0.083333333333"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="Roundabout North to West" length="8.377580409573" id="2" junction="-1">
+        <link>
+            <predecessor elementType="junction" elementId="101"/>
+            <successor elementType="junction" elementId="102"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-5.071419140888" y="10.875693444440" hdg="3.577924966588" length="8.377580409573">
+                <arc curvature="0.083333333333"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="Roundabout West to South" length="8.377580409573" id="3" junction="-1">
+        <link>
+            <predecessor elementType="junction" elementId="102"/>
+            <successor elementType="junction" elementId="103"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-10.875693444440" y="-5.071419140888" hdg="5.148721293383" length="8.377580409573">
+                <arc curvature="0.083333333333"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="Roundabout South to East" length="8.377580409573" id="4" junction="-1">
+        <link>
+            <predecessor elementType="junction" elementId="103"/>
+            <successor elementType="junction" elementId="100"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="5.071419140888" y="-10.875693444440" hdg="0.436332312999" length="8.377580409573">
+                <arc curvature="0.083333333333"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="East Entry" length="20.000000000000" id="10" junction="-1">
+        <link>
+            <successor elementType="junction" elementId="100"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="40" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="38.000000000000" y="1.750000000000" hdg="3.141592653590" length="20.000000000000">
+                <line/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="East Exit" length="20.000000000000" id="11" junction="-1">
+        <link>
+            <predecessor elementType="junction" elementId="100"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="40" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="18.000000000000" y="-1.750000000000" hdg="0.000000000000" length="20.000000000000">
+                <line/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="North Entry" length="20.000000000000" id="20" junction="-1">
+        <link>
+            <successor elementType="junction" elementId="101"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="40" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-1.750000000000" y="38.000000000000" hdg="4.712388980385" length="20.000000000000">
+                <line/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="North Exit" length="20.000000000000" id="21" junction="-1">
+        <link>
+            <predecessor elementType="junction" elementId="101"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="40" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="1.750000000000" y="18.000000000000" hdg="1.570796326795" length="20.000000000000">
+                <line/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="West Entry" length="20.000000000000" id="30" junction="-1">
+        <link>
+            <successor elementType="junction" elementId="102"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="40" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-38.000000000000" y="-1.750000000000" hdg="0.000000000000" length="20.000000000000">
+                <line/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="West Exit" length="20.000000000000" id="31" junction="-1">
+        <link>
+            <predecessor elementType="junction" elementId="102"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="40" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-18.000000000000" y="1.750000000000" hdg="3.141592653590" length="20.000000000000">
+                <line/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="South Entry" length="20.000000000000" id="40" junction="-1">
+        <link>
+            <successor elementType="junction" elementId="103"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="40" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="1.750000000000" y="-38.000000000000" hdg="1.570796326795" length="20.000000000000">
+                <line/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="South Exit" length="20.000000000000" id="41" junction="-1">
+        <link>
+            <predecessor elementType="junction" elementId="103"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="40" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-1.750000000000" y="-18.000000000000" hdg="4.712388980385" length="20.000000000000">
+                <line/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="East Ring Continuation" length="10.471975511966" id="1000" junction="100">
+        <link>
+            <predecessor elementType="road" elementId="4" contactPoint="end"/>
+            <successor elementType="road" elementId="1" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="10.875693444440" y="-5.071419140888" hdg="1.134464013796" length="10.471975511966">
+                <arc curvature="0.083333333333"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="East Entry Connector" length="8.349657997140" id="1001" junction="100">
+        <link>
+            <predecessor elementType="road" elementId="10" contactPoint="end"/>
+            <successor elementType="road" elementId="1" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="18.000000000000" y="1.750000000000" hdg="3.141592653590" length="8.349657997140">
+                <paramPoly3 aU="0.000000000000" bU="9.039582955637" cU="-0.526539080164" dU="-1.388737319912" aV="0.000000000000" bV="0.000000000000" cV="-1.771612998408" dV="-1.549806142480" pRange="normalized"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.059882692222" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.119765384444" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="East Exit Connector" length="8.349657997140" id="1002" junction="100">
+        <link>
+            <predecessor elementType="road" elementId="4" contactPoint="end"/>
+            <successor elementType="road" elementId="11" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="10.875693444440" y="-5.071419140888" hdg="1.134464013796" length="8.349657997140">
+                <paramPoly3 aU="0.000000000000" bU="9.039582955637" cU="-3.836188494790" dU="0.817695623172" aV="0.000000000000" bV="0.000000000000" cV="-6.966721949861" dV="1.913599825155" pRange="normalized"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="-0.059882692222" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="-0.119765384444" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="North Ring Continuation" length="10.471975511966" id="1010" junction="101">
+        <link>
+            <predecessor elementType="road" elementId="1" contactPoint="end"/>
+            <successor elementType="road" elementId="2" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="5.071419140888" y="10.875693444440" hdg="2.705260340591" length="10.471975511966">
+                <arc curvature="0.083333333333"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="North Entry Connector" length="8.349657997140" id="1011" junction="101">
+        <link>
+            <predecessor elementType="road" elementId="20" contactPoint="end"/>
+            <successor elementType="road" elementId="2" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-1.750000000000" y="18.000000000000" hdg="4.712388980385" length="8.349657997140">
+                <paramPoly3 aU="0.000000000000" bU="9.039582955637" cU="-0.526539080164" dU="-1.388737319912" aV="0.000000000000" bV="0.000000000000" cV="-1.771612998408" dV="-1.549806142480" pRange="normalized"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.059882692222" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.119765384444" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="North Exit Connector" length="8.349657997140" id="1012" junction="101">
+        <link>
+            <predecessor elementType="road" elementId="1" contactPoint="end"/>
+            <successor elementType="road" elementId="21" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="5.071419140888" y="10.875693444440" hdg="2.705260340591" length="8.349657997140">
+                <paramPoly3 aU="0.000000000000" bU="9.039582955637" cU="-3.836188494790" dU="0.817695623172" aV="0.000000000000" bV="0.000000000000" cV="-6.966721949861" dV="1.913599825155" pRange="normalized"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="-0.059882692222" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="-0.119765384444" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="West Ring Continuation" length="10.471975511966" id="1020" junction="102">
+        <link>
+            <predecessor elementType="road" elementId="2" contactPoint="end"/>
+            <successor elementType="road" elementId="3" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-10.875693444440" y="5.071419140888" hdg="4.276056667386" length="10.471975511966">
+                <arc curvature="0.083333333333"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="West Entry Connector" length="8.349657997140" id="1021" junction="102">
+        <link>
+            <predecessor elementType="road" elementId="30" contactPoint="end"/>
+            <successor elementType="road" elementId="3" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-18.000000000000" y="-1.750000000000" hdg="0.000000000000" length="8.349657997140">
+                <paramPoly3 aU="0.000000000000" bU="9.039582955637" cU="-0.526539080164" dU="-1.388737319912" aV="0.000000000000" bV="0.000000000000" cV="-1.771612998408" dV="-1.549806142480" pRange="normalized"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.059882692222" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.119765384444" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="West Exit Connector" length="8.349657997140" id="1022" junction="102">
+        <link>
+            <predecessor elementType="road" elementId="2" contactPoint="end"/>
+            <successor elementType="road" elementId="31" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-10.875693444440" y="5.071419140888" hdg="4.276056667386" length="8.349657997140">
+                <paramPoly3 aU="0.000000000000" bU="9.039582955637" cU="-3.836188494790" dU="0.817695623172" aV="0.000000000000" bV="0.000000000000" cV="-6.966721949861" dV="1.913599825155" pRange="normalized"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="-0.059882692222" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="-0.119765384444" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="South Ring Continuation" length="10.471975511966" id="1030" junction="103">
+        <link>
+            <predecessor elementType="road" elementId="3" contactPoint="end"/>
+            <successor elementType="road" elementId="4" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-5.071419140888" y="-10.875693444440" hdg="5.846852994181" length="10.471975511966">
+                <arc curvature="0.083333333333"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="South Entry Connector" length="8.349657997140" id="1031" junction="103">
+        <link>
+            <predecessor elementType="road" elementId="40" contactPoint="end"/>
+            <successor elementType="road" elementId="4" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="1.750000000000" y="-18.000000000000" hdg="1.570796326795" length="8.349657997140">
+                <paramPoly3 aU="0.000000000000" bU="9.039582955637" cU="-0.526539080164" dU="-1.388737319912" aV="0.000000000000" bV="0.000000000000" cV="-1.771612998408" dV="-1.549806142480" pRange="normalized"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="1.750000000000" b="0.059882692222" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.500000000000" b="0.119765384444" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <road name="South Exit Connector" length="8.349657997140" id="1032" junction="103">
+        <link>
+            <predecessor elementType="road" elementId="3" contactPoint="end"/>
+            <successor elementType="road" elementId="41" contactPoint="start"/>
+        </link>
+        <type s="0.000000000000" type="town">
+            <speed max="25" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-5.071419140888" y="-10.875693444440" hdg="5.846852994181" length="8.349657997140">
+                <paramPoly3 aU="0.000000000000" bU="9.039582955637" cU="-3.836188494790" dU="0.817695623172" aV="0.000000000000" bV="0.000000000000" cV="-6.966721949861" dV="1.913599825155" pRange="normalized"/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="2.250000000000" b="-0.059882692222" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="driving" level="false">
+                        <link>
+                            <predecessor id="-1"/>
+                            <successor id="-1"/>
+                        </link>
+                        <width sOffset="0.000000000000" a="4.500000000000" b="-0.119765384444" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.125000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+
+    <junction id="100" name="East Junction">
+        <connection id="0" incomingRoad="4" connectingRoad="1000" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="1" incomingRoad="10" connectingRoad="1001" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="2" incomingRoad="4" connectingRoad="1002" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+    </junction>
+
+    <junction id="101" name="North Junction">
+        <connection id="0" incomingRoad="1" connectingRoad="1010" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="1" incomingRoad="20" connectingRoad="1011" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="2" incomingRoad="1" connectingRoad="1012" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+    </junction>
+
+    <junction id="102" name="West Junction">
+        <connection id="0" incomingRoad="2" connectingRoad="1020" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="1" incomingRoad="30" connectingRoad="1021" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="2" incomingRoad="2" connectingRoad="1022" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+    </junction>
+
+    <junction id="103" name="South Junction">
+        <connection id="0" incomingRoad="3" connectingRoad="1030" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="1" incomingRoad="40" connectingRoad="1031" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+        <connection id="2" incomingRoad="3" connectingRoad="1032" contactPoint="start">
+            <laneLink from="-1" to="-1"/>
+        </connection>
+    </junction>
+
+</OpenDRIVE>

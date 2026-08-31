@@ -1,0 +1,212 @@
+# Third-Party Notices
+
+This file documents direct dependencies, selected transitive dependencies,
+external data, and visual assets referenced by the scenario.generator source
+repository. The project itself is licensed under the terms in `LICENSE`.
+
+## Runtime dependencies
+
+### defusedxml
+
+- Declared version: `>=0.7.1`
+- License: Python Software Foundation License 2.0 (`PSF-2.0`)
+- Source and license: https://github.com/tiran/defusedxml
+
+### FastAPI
+
+- Declared version: `>=0.115`
+- License: MIT License
+- Source and license: https://github.com/fastapi/fastapi
+
+### markdown-it-py
+
+- Declared version: `>=3.0`
+- License: MIT License
+- Source and license: https://github.com/executablebooks/markdown-it-py
+
+### Omega-Prime
+
+- Declared version: `>=0.3.5`
+- License: Mozilla Public License 2.0 (`MPL-2.0`)
+- Source and license: https://github.com/ika-rwth-aachen/omega-prime
+
+### python-multipart
+
+- Declared version: `>=0.0.9`
+- License: Apache License 2.0 (`Apache-2.0`)
+- Source and license: https://github.com/Kludex/python-multipart
+
+### PyYAML
+
+- Declared version: `>=6.0`
+- License: MIT License
+- Source and license: https://github.com/yaml/pyyaml
+
+### Scenario Quality Checker
+
+- Declared version: Git revision selected from the upstream repository during
+  installation
+- License: MIT License
+- Source and license:
+  https://github.com/ika-rwth-aachen/scenario_quality_checker
+
+The Scenario Quality Checker distribution contains ASAM OpenSCENARIO schema
+files. Those schema files are subject to the notices and terms supplied by ASAM:
+- ASAM OpenSCENARIO XML: https://publications.pages.asam.net/standards/ASAM_OpenSCENARIO/ASAM_OpenSCENARIO_XML/v1.3.0/index.html
+- ASAM license information: https://www.asam.net/license
+
+LicenseCheck cannot retrieve package-index metadata for this direct Git
+dependency. It is therefore excluded from the automated compatibility result
+based on the reviewed upstream MIT license and ASAM license information above.
+
+### Uvicorn
+
+- Declared version: `>=0.30`, including the `standard` extra
+- License: BSD 3-Clause License (`BSD-3-Clause`)
+- Source and license: https://github.com/Kludex/uvicorn
+
+## Reviewed transitive license-check metadata exceptions
+
+### Matplotlib
+
+- Transitive runtime dependency
+- License: Matplotlib License
+- Source: https://github.com/matplotlib/matplotlib
+- License: https://matplotlib.org/stable/project/license.html
+
+### mypy-extensions
+
+- Resolved version during review: `1.1.0`
+- Dependency path:
+  `omega-prime -> pandera -> typing-inspect -> mypy-extensions`
+- Upstream license: MIT License
+- Source: https://github.com/python/mypy_extensions
+- License text: https://github.com/python/mypy_extensions/blob/master/LICENSE
+- Finding: the package index metadata used by LicenseCheck does not report a
+  license for this release; the upstream license file identifies it as MIT.
+
+### pyclothoids
+
+- Resolved version during review: `0.2.0`
+- Dependency path:
+  `scenario-quality-checker -> scenariogeneration -> pyclothoids`
+- Upstream license: MIT License
+- Source: https://github.com/phillipd94/pyclothoids
+- License text: https://github.com/phillipd94/pyclothoids/blob/master/LICENSE
+- Finding: the package index metadata used by LicenseCheck does not report a
+  license for this release; the upstream license file identifies it as MIT.
+
+## Development and test dependencies
+
+These components are required for building or testing the repository but are
+not part of the scenario.generator application source.
+
+### setuptools
+
+- Declared version: `>=77` (build system)
+- License: MIT License
+- Source and license: https://github.com/pypa/setuptools
+
+### build
+
+- Declared version: `>=1`
+- License: MIT License
+- Source and license: https://github.com/pypa/build
+
+### pytest
+
+- Declared version: `>=8`
+- License: MIT License
+- Source and license: https://github.com/pytest-dev/pytest
+
+### Ruff
+
+- Declared version: `0.15.22`
+- License: MIT License
+- Source and license: https://github.com/astral-sh/ruff
+
+### LicenseCheck
+
+- Declared version: `2026.0.8` (GitHub Actions)
+- License: MIT License
+- Source and license: https://github.com/FHPythonUtils/LicenseCheck
+
+### uv
+
+- Declared version: `0.12.6` (development container, GitHub Actions, and Docker)
+- License: MIT License or Apache License 2.0 (`MIT OR Apache-2.0`)
+- Source and license: https://github.com/astral-sh/uv
+
+### Playwright Test
+
+- Declared version: `1.62.1`
+- License: Apache License 2.0 (`Apache-2.0`)
+- Source and license: https://github.com/microsoft/playwright
+
+### axe-core Playwright
+
+- Declared version: `4.10.2`
+- License: Mozilla Public License 2.0 (`MPL-2.0`)
+- Source and license: https://github.com/dequelabs/axe-core-npm
+
+The package embeds `axe-core`, which is also distributed under `MPL-2.0` and
+includes its own third-party notices.
+
+## Referenced data and web assets
+
+### Google Material Icons
+
+- License: Apache License 2.0 (`Apache-2.0`)
+- Source and license: https://github.com/google/material-design-icons
+
+### CARLA blueprint metadata
+
+`scenario_generator/scenario_elements/road_user/carla_blueprints.json` contains
+blueprint identifiers and labels transcribed from the official CARLA UE5
+vehicle and pedestrian catalogues at commit
+`0a5ce0d5b4952bd8294a163c12d49f197bdb2aba`.
+
+- License: MIT License
+- Vehicle catalogue: https://github.com/carla-simulator/carla/blob/ue5-dev/Docs/catalogue_vehicles.md
+- Pedestrian catalogue: https://github.com/carla-simulator/carla/blob/ue5-dev/Docs/catalogue_pedestrians.md
+- Source and license: https://github.com/carla-simulator/carla
+
+### OpenADSim example map
+
+`scenario_generator/webapp/documentation/examples/synthetic_curve_cut_in.xodr`
+is copied from the OpenADSim example scenario.
+
+- License: Apache License 2.0 (`Apache-2.0`)
+- Source: https://github.com/openads-project/openadsim/blob/main/carla-simulation/scenarios/simple-scenario/synthetic_curve_cut_in.xodr
+- Source and license: https://github.com/openads-project/openadsim
+
+### Project and funding marks
+
+`assets/synergies.svg` and `assets/funded_by_eu.svg` are displayed in the
+README solely to acknowledge the SYNERGIES project and European Union funding.
+Names, emblems, and visual identities remain subject to the rights and usage
+rules of their respective owners and are not relicensed by the project license.
+
+- SYNERGIES project: https://synergies-ccam.eu/
+- European Commission visibility guidance:
+  https://commission.europa.eu/funding-and-tenders/managing-your-project/communicating-and-raising-eu-visibility_en
+
+### RITA junction map
+
+The metadata in `scenario_generator/webapp/default_maps/RITA-junction.xodr`
+identifies MathWorks RoadRunner R2025b as the generating tool. The vendor field
+documents file provenance; the repository does not bundle RoadRunner software.
+
+## Container images and transitive dependencies
+
+The Docker build uses the official `python:3.11-slim` base image. Python is
+distributed under the Python Software Foundation License; Debian packages in
+the image retain their individual licenses and notices.
+
+- Python license: https://docs.python.org/3/license.html
+- Official Python image source: https://github.com/docker-library/python
+- Debian copyright information: `/usr/share/doc/*/copyright` inside the image
+
+
+This inventory was reviewed against the repository declarations and tracked
+assets on 2026-08-31.

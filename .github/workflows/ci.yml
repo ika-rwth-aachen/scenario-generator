@@ -1,0 +1,155 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  pytests:
+    name: Pytests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install uv and deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install uv==0.12.6
+          uv --version
+          uv sync --locked --extra dev
+      - name: Run pytest
+        run: uv run --locked --extra dev python -m pytest --junitxml=pytest-report.xml
+      - name: Upload pytest artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: pytest-report
+          path: pytest-report.xml
+      - name: Report JUnit to Checks
+        uses: dorny/test-reporter@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: pytest
+          path: pytest-report.xml
+          reporter: python-xunit
+
+  wheel-smoke:
+    name: Wheel smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Prepare build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+      - name: Build wheel and run smoke
+        run: |
+          python -m build --wheel
+          python -m venv /tmp/scenario-generator-wheel
+          /tmp/scenario-generator-wheel/bin/python -m pip install --upgrade pip
+          /tmp/scenario-generator-wheel/bin/python -m pip install dist/*.whl
+          /tmp/scenario-generator-wheel/bin/python tests/wheel_smoke.py
+
+  linting:
+    name: Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install uv and ruff
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install uv==0.12.6
+          uv sync --locked --extra dev
+      - name: Run ruff
+        run: uv run --locked --extra dev ruff check .
+
+  licensecheck:
+    name: License check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install uv
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install uv==0.12.6
+          uvx --version
+      - name: Run licensecheck
+        run: uvx --from licensecheck==2026.0.8 licensecheck --license Apache-2.0
+
+  gui-tests:
+    name: GUI tests (Playwright)
+    runs-on: ubuntu-latest
+    services: {}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+      - name: Prepare venv and uv
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install virtualenv
+          python -m virtualenv /tmp/scenario-generator-uv
+          /tmp/scenario-generator-uv/bin/python -m pip install uv==0.12.6
+          /tmp/scenario-generator-uv/bin/uv sync --locked
+      - name: Install e2e dependencies
+        run: |
+          npm --prefix tests/e2e ci
+          npm --prefix tests/e2e exec -- playwright install --with-deps chromium
+      - name: Run Playwright e2e
+        env:
+          PLAYWRIGHT_WEB_SERVER_COMMAND: ".venv/bin/python -m scenario_generator.webapp.server"
+        run: |
+          cd tests/e2e && npm run test:e2e
+      - name: Upload e2e artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-reports
+          path: |
+            tests/e2e/playwright-report/
+            tests/e2e/test-results/
+
+  build:
+    name: Build Docker image (no deployment)
+    runs-on: ubuntu-latest
+    needs: [pytests, wheel-smoke, linting, licensecheck, gui-tests]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: false
+          tags: local/scenario-generator:latest

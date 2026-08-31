@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenDRIVE>
+    <header revMajor="1" revMinor="4" name="Custom six-lane highway" version="1.0" date="2026-08-24T00:00:00" north="16.000000000000" south="-16.000000000000" east="250.000000000000" west="-250.000000000000" vendor="Custom"/>
+
+    <road name="Custom Highway" length="500.000000000000" id="1" junction="-1">
+        <link>
+        </link>
+        <type s="0.000000000000" type="motorway">
+            <speed max="120" unit="km/h"/>
+        </type>
+        <planView>
+            <geometry s="0.000000000000" x="-250.000000000000" y="0.000000000000" hdg="0.000000000000" length="500.000000000000">
+                <line/>
+            </geometry>
+        </planView>
+        <elevationProfile>
+            <elevation s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+        </elevationProfile>
+        <lanes>
+            <laneOffset s="0.000000000000" a="0.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+            <laneSection s="0.000000000000">
+                <left>
+                    <lane id="1" type="median" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="2.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="yellow" width="0.150000000000" laneChange="none"/>
+                    </lane>
+                    <lane id="2" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="broken" material="standard" color="white" width="0.150000000000" laneChange="both"/>
+                    </lane>
+                    <lane id="3" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="broken" material="standard" color="white" width="0.150000000000" laneChange="both"/>
+                    </lane>
+                    <lane id="4" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.150000000000" laneChange="none"/>
+                    </lane>
+                    <lane id="5" type="shoulder" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="2.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.150000000000" laneChange="none"/>
+                    </lane>
+                </left>
+                <center>
+                    <lane id="0" type="none" level="false">
+                        <roadMark sOffset="0.000000000000" type="none" material="standard" color="white" width="0.000000000000" laneChange="none"/>
+                    </lane>
+                </center>
+                <right>
+                    <lane id="-1" type="median" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="2.000000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="yellow" width="0.150000000000" laneChange="none"/>
+                    </lane>
+                    <lane id="-2" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="broken" material="standard" color="white" width="0.150000000000" laneChange="both"/>
+                    </lane>
+                    <lane id="-3" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="broken" material="standard" color="white" width="0.150000000000" laneChange="both"/>
+                    </lane>
+                    <lane id="-4" type="driving" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="3.750000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.150000000000" laneChange="none"/>
+                    </lane>
+                    <lane id="-5" type="shoulder" level="false">
+                        <link>
+                        </link>
+                        <width sOffset="0.000000000000" a="2.500000000000" b="0.000000000000" c="0.000000000000" d="0.000000000000"/>
+                        <roadMark sOffset="0.000000000000" type="solid" material="standard" color="white" width="0.150000000000" laneChange="none"/>
+                    </lane>
+                </right>
+            </laneSection>
+        </lanes>
+    </road>
+</OpenDRIVE>

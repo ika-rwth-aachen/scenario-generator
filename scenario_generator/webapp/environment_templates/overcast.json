@@ -1,0 +1,12 @@
+{
+  "name": "overcast",
+  "time_of_day": "2026-06-26T09:00:00",
+  "cloud_state": "overcast",
+  "sun_intensity": 0.35,
+  "sun_azimuth": 135.0,
+  "sun_elevation": 22.0,
+  "fog_visual_range": 70000.0,
+  "precipitation_type": "dry",
+  "precipitation_intensity": 0.0,
+  "road_friction": 0.95
+}

@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "source": {
+    "name": "CARLA UE5 blueprint library",
+    "repository": "https://github.com/carla-simulator/carla",
+    "branch": "ue5-dev",
+    "commit": "0a5ce0d5b4952bd8294a163c12d49f197bdb2aba",
+    "docs_paths": [
+      "Docs/catalogue_vehicles.md",
+      "Docs/catalogue_pedestrians.md"
+    ],
+    "checked_on": "2026-08-26",
+    "note": "The official UE5 vehicle and pedestrian catalogues do not list cyclist-specific blueprints."
+  },
+  "vehicles": [
+    {
+      "id": "vehicle.ue4.audi.tt",
+      "label": "Audi TT",
+      "category": "car"
+    },
+    {
+      "id": "vehicle.ue4.bmw.grantourer",
+      "label": "BMW Gran Tourer",
+      "category": "car"
+    },
+    {
+      "id": "vehicle.ue4.chevrolet.impala",
+      "label": "Chevrolet Impala",
+      "category": "car"
+    },
+    {
+      "id": "vehicle.dodge.charger",
+      "label": "Dodge Charger 2020",
+      "category": "car"
+    },
+    {
+      "id": "vehicle.dodgecop.charger",
+      "label": "Dodge Police Charger 2020",
+      "category": "car",
+      "special_type": "emergency"
+    },
+    {
+      "id": "vehicle.taxi.ford",
+      "label": "Ford Crown (taxi)",
+      "category": "car",
+      "special_type": "taxi"
+    },
+    {
+      "id": "vehicle.ue4.ford.mustang",
+      "label": "Ford Mustang",
+      "category": "car"
+    },
+    {
+      "id": "vehicle.lincoln.mkz",
+      "label": "Lincoln MKZ",
+      "category": "car"
+    },
+    {
+      "id": "vehicle.ue4.mercedes.ccc",
+      "label": "Mercedes Coupe",
+      "category": "car"
+    },
+    {
+      "id": "vehicle.mini.cooper",
+      "label": "Mini Cooper S 2021",
+      "category": "car"
+    },
+    {
+      "id": "vehicle.nissan.patrol",
+      "label": "Nissan Patrol",
+      "category": "car"
+    },
+    {
+      "id": "vehicle.carlacola.actors",
+      "label": "CARLA Motors CarlaCola",
+      "category": "truck"
+    },
+    {
+      "id": "vehicle.firetruck.actors",
+      "label": "CARLA Motors Firetruck",
+      "category": "truck",
+      "special_type": "emergency"
+    },
+    {
+      "id": "vehicle.ambulance.ford",
+      "label": "Ford Ambulance",
+      "category": "van",
+      "special_type": "emergency"
+    },
+    {
+      "id": "vehicle.sprinter.mercedes",
+      "label": "Mercedes Sprinter",
+      "category": "van"
+    },
+    {
+      "id": "vehicle.fuso.mitsubishi",
+      "label": "Mitsubishi Fusorosa",
+      "category": "bus"
+    },
+    {
+      "id": "vehicle.miningtruck.miningtruck",
+      "label": "Mining earth mover",
+      "category": "truck"
+    }
+  ],
+  "cyclists": [],
+  "pedestrians": [
+    {
+      "id": "walker.pedestrian.0015",
+      "label": "Adult pedestrian 1 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0019",
+      "label": "Adult pedestrian 1 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0016",
+      "label": "Adult pedestrian 2 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0017",
+      "label": "Adult pedestrian 2 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0026",
+      "label": "Adult pedestrian 3 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0018",
+      "label": "Adult pedestrian 3 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0021",
+      "label": "Adult pedestrian 4 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0020",
+      "label": "Adult pedestrian 4 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0023",
+      "label": "Adult pedestrian 5 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0022",
+      "label": "Adult pedestrian 5 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0024",
+      "label": "Adult pedestrian 6 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0025",
+      "label": "Adult pedestrian 6 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0027",
+      "label": "Adult pedestrian 7 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0029",
+      "label": "Adult pedestrian 7 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0028",
+      "label": "Adult pedestrian 7 - variant 3",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0041",
+      "label": "Adult pedestrian 8 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0040",
+      "label": "Adult pedestrian 8 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0033",
+      "label": "Adult pedestrian 8 - variant 3",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0031",
+      "label": "Adult pedestrian 8 - variant 4",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0034",
+      "label": "Adult pedestrian 9 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0038",
+      "label": "Adult pedestrian 9 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0035",
+      "label": "Adult pedestrian 10 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0036",
+      "label": "Adult pedestrian 10 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0037",
+      "label": "Adult pedestrian 10 - variant 3",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0039",
+      "label": "Adult pedestrian 11 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0042",
+      "label": "Adult pedestrian 12 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0043",
+      "label": "Adult pedestrian 12 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0044",
+      "label": "Adult pedestrian 12 - variant 3",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0047",
+      "label": "Adult pedestrian 13 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0046",
+      "label": "Adult pedestrian 13 - variant 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0045",
+      "label": "Adult pedestrian 14 - variant 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0050",
+      "label": "Child pedestrian 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0051",
+      "label": "Child pedestrian 2",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0048",
+      "label": "Child pedestrian 3",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0049",
+      "label": "Child pedestrian 4",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0030",
+      "label": "Police pedestrian 1",
+      "category": "pedestrian"
+    },
+    {
+      "id": "walker.pedestrian.0032",
+      "label": "Police pedestrian 2",
+      "category": "pedestrian"
+    }
+  ]
+}

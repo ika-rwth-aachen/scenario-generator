@@ -1,0 +1,95 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scenario.generator"
+version = "0.1.0"
+description = "Web application for creating scenario trajectories and exporting OpenSCENARIO files."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "LICENSE-3rdparty"]
+authors = [
+  { name = "Institute for Automotive Engineering (ika), RWTH Aachen University", email = "opensource@ika.rwth-aachen.de" },
+]
+keywords = ["OpenSCENARIO", "OpenDRIVE", "scenario generation", "automated driving"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Web Environment",
+  "Framework :: FastAPI",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "defusedxml>=0.7.1",
+  "fastapi>=0.115",
+  "markdown-it-py>=3.0",
+  "omega-prime>=0.3.5",
+  "python-multipart>=0.0.9",
+  "PyYAML>=6.0",
+  "scenario-quality-checker @ git+https://github.com/ika-rwth-aachen/scenario_quality_checker.git",
+  "uvicorn[standard]>=0.30",
+]
+
+[project.urls]
+Homepage = "https://github.com/ika-rwth-aachen/scenario-generator"
+Repository = "https://github.com/ika-rwth-aachen/scenario-generator.git"
+Issues = "https://github.com/ika-rwth-aachen/scenario-generator/issues"
+
+[project.scripts]
+"scenario.generator" = "scenario_generator.webapp.server:main"
+
+[tool.setuptools.packages.find]
+include = ["scenario_generator*"]
+
+[tool.setuptools.package-data]
+"scenario_generator.scenario_elements.road_user" = ["carla_blueprints.json"]
+"scenario_generator.webapp" = [
+  "about.md",
+  "help.md",
+  "static/*",
+  "environment_templates/*.json",
+  "default_scenarios/*.json",
+  "default_scenarios/*.xosc",
+  "default_maps/*",
+  "branding/*",
+  "documentation/*.md",
+  "documentation/examples/*",
+  "documentation/images/*",
+  "documentation/templates/*",
+]
+"scenario_generator.config" = ["default_config.yml"]
+"scenario_generator.postprocessing_scripts" = ["README.md"]
+[project.optional-dependencies]
+dev = [
+  "build>=1",
+  "pytest>=8",
+  "ruff==0.15.22",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.licensecheck]
+# Both packages are MIT-licensed upstream, but their PyPI releases do not
+# provide the license metadata consumed by LicenseCheck. See LICENSE-3rdparty.
+ignore_packages = ["mypy-extensions", "pyclothoids"]
+# This direct Git dependency has no PyPI metadata. Its upstream MIT license and
+# bundled ASAM notices are documented in LICENSE-3rdparty.
+skip_dependencies = ["scenario-quality-checker"]
+zero = true
+
+[tool.ruff]
+required-version = "==0.15.22"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"scenario_generator/config/__init__.py" = ["F403"]

@@ -1,0 +1,4 @@
+{
+  "name": "RosRouteController",
+  "xml": "<ControllerAction>\n  <AssignControllerAction>\n    <Controller name=\"RosRouteController\">\n      <Properties>\n        <Property name=\"module\" value=\"ros_vehicle_control_route_action.py\" />\n      </Properties>\n    </Controller>\n  </AssignControllerAction>\n  <OverrideControllerValueAction>\n    <Throttle value=\"0\" active=\"false\" />\n    <Brake value=\"0\" active=\"false\" />\n    <Clutch value=\"0\" active=\"false\" />\n    <ParkingBrake value=\"0\" active=\"false\" />\n    <SteeringWheel value=\"0\" active=\"false\" />\n    <Gear number=\"0\" active=\"false\" />\n  </OverrideControllerValueAction>\n</ControllerAction>"
+}

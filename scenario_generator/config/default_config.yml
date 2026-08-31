@@ -1,0 +1,149 @@
+# Default time distance in seconds for newly appended waypoints.
+# Used in fixed-time mode and as a fallback when no previous segment speed
+# can be calculated. Inserting between two existing rows uses their midpoint.
+time_step_s: 1.0
+
+# Number of geometric samples per trajectory segment used to calculate the
+# distance profile. Higher values improve curve-length accuracy but take longer.
+PROFILE_DISTANCE_SAMPLES_PER_SEGMENT: 64
+
+map_export:
+  # Maximum allowed lateral deviation of the exported OpenDRIVE polyline
+  # from the internally sampled road curve. Larger values reduce point count.
+  max_lateral_deviation_m: 0.5
+
+# Safety and resource limits for untrusted scenario and map imports.
+import_limits:
+  max_imported_actors: 256
+  max_waypoints_per_actor: 100000
+  max_total_waypoints: 250000
+  max_imported_roads: 10000
+  max_points_per_road: 100000
+  max_total_map_points: 500000
+  max_text_field_chars: 1000000
+  max_actor_name_chars: 128
+  max_abs_coordinate_m: 10000000.0
+  max_time_s: 1000000.0
+  max_speed_mps: 10000.0
+  max_actor_dimension_m: 1000.0
+
+
+# Colors used to render OpenDRIVE lane types in the map view.
+map_display:
+  lane_type_colors:
+    driving: "#4a4f55"
+    sidewalk: "#d8d8d8"
+    walking: "#d8d8d8"
+    pedestrian: "#d8d8d8"
+    biking: "#f2bd78"
+    parking: "#8fa7b5"
+    restricted: "#c98b8b"
+    default: "#f6d7df"
+
+# Canvas zoom limits in pixels per meter.
+canvas_min_scale: 0.2
+canvas_max_scale: 120.0
+# Defaults used when importing Omega-Prime MCAP files.
+omega_prime:
+  interpolation_hz: 10
+# Defaults used when importing ika-rwth-aachen/simple-scenario JSON files.
+simple_scenario:
+  lane_width_m: 3.75
+  dt_s: 0.1
+  lanelet_id_base: 1000
+  default_duration_s: 10.0
+  vehicle_types:
+    medium:
+      length_m: 4.5
+      width_m: 1.8
+      height_m: 1.8
+      actor_type: vehicle
+    small:
+      length_m: 4.0
+      width_m: 1.7
+      height_m: 1.6
+      actor_type: vehicle
+    large:
+      length_m: 5.2
+      width_m: 2.0
+      height_m: 2.2
+      actor_type: vehicle
+    bicycle:
+      length_m: 1.8
+      width_m: 0.7
+      height_m: 1.7
+      actor_type: cyclist
+    cyclist:
+      length_m: 1.8
+      width_m: 0.7
+      height_m: 1.7
+      actor_type: cyclist
+    pedestrian:
+      length_m: 0.6
+      width_m: 0.6
+      height_m: 1.8
+      actor_type: pedestrian
+
+# Defaults used by OpenSCENARIO export and dialogs.
+openscenario:
+  default_rev_minor: 1
+  # Factor for XOSC SimulationTimeCondition stop triggers.
+  # 1.0 keeps the trajectory duration; 1.5 adds 50%; 2.0 doubles it.
+  simulation_time_condition_factor: 1.0
+  actor_dimensions:
+    vehicle:
+      width_m: 1.8
+      length_m: 4.5
+      height_m: 1.8
+    cyclist:
+      width_m: 0.7
+      length_m: 1.8
+      height_m: 1.7
+    pedestrian:
+      width_m: 0.6
+      length_m: 0.6
+      height_m: 1.8
+  actor_defaults:
+    vehicle:
+      attributes:
+        vehicleCategory: car
+      performance:
+        maxSpeed: 69.444
+        maxAcceleration: 8
+        maxDeceleration: 8
+      front_axle:
+        maxSteering: 0.5
+        wheelDiameter: 0.6
+        trackWidth: 1.7
+        positionX: 2.8
+        positionZ: 0.3
+      rear_axle:
+        maxSteering: 0
+        wheelDiameter: 0.6
+        trackWidth: 1.7
+        positionX: 0
+        positionZ: 0.3
+    cyclist:
+      attributes:
+        vehicleCategory: bicycle
+      performance:
+        maxSpeed: 69.444
+        maxAcceleration: 8
+        maxDeceleration: 8
+      front_axle:
+        maxSteering: 0.5
+        wheelDiameter: 0.7
+        trackWidth: 0.6
+        positionX: 2.8
+        positionZ: 0.3
+      rear_axle:
+        maxSteering: 0
+        wheelDiameter: 0.7
+        trackWidth: 0.6
+        positionX: 0
+        positionZ: 0.3
+    pedestrian:
+      attributes:
+        model3d: pedestrian.adult
+        mass: 75
+        pedestrianCategory: pedestrian

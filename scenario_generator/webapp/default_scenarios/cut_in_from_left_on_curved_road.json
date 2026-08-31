@@ -1,0 +1,55 @@
+{
+  "version": 4,
+  "title": "cut_in_from_left_on_curved_road",
+  "description": "A vehicle cuts in from the left lane into the ego vehicle's lane on a curved road.",
+  "map_path": "../documentation/examples/synthetic_curve_cut_in.xodr",
+  "detection_gaps": [],
+  "additional_scenario_information": {
+    "file_header": {
+      "author": "scenario.generator",
+      "description": "cut_in_from_left_on_curved_road default scenario created with scenario.generator",
+      "revMajor": 1,
+      "revMinor": 1
+    },
+    "xosc_map_path": "synthetic_curve_cut_in.xodr",
+    "simulation_time_condition_factor": 1,
+    "postprocessing_scripts": [],
+    "postprocessing_parameters": {}
+  },
+  "vehicles": [
+    {
+      "name": "ego_vehicle",
+      "actor_type": "vehicle",
+      "dimensions": {
+        "length_m": 4.5,
+        "width_m": 1.8,
+        "height_m": 1.6,
+        "actor_type": "vehicle"
+      },
+      "waypoints": [
+        {"time_s": 0.0, "x_m": 40.0, "y_m": -5.625},
+        {"time_s": 2.0, "x_m": 80.0, "y_m": -5.625},
+        {"time_s": 4.0, "x_m": 120.437, "y_m": -5.074},
+        {"time_s": 6.0, "x_m": 160.8, "y_m": 6.329},
+        {"time_s": 8.0, "x_m": 193.565, "y_m": 32.555}
+      ]
+    },
+    {
+      "name": "cut_in_vehicle",
+      "actor_type": "vehicle",
+      "dimensions": {
+        "length_m": 4.5,
+        "width_m": 1.8,
+        "height_m": 1.6,
+        "actor_type": "vehicle"
+      },
+      "waypoints": [
+        {"time_s": 0.0, "x_m": 65.0, "y_m": -1.875},
+        {"time_s": 2.0, "x_m": 105.009, "y_m": -1.867},
+        {"time_s": 4.0, "x_m": 145.023, "y_m": 3.718},
+        {"time_s": 6.0, "x_m": 181.294, "y_m": 22.604},
+        {"time_s": 8.0, "x_m": 207.796, "y_m": 54.717}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>scenario.generator</title>
+    <link rel="icon" href="/branding/logo_icon.png?v=transparent" type="image/png" />
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#application-main">Skip to application</a>
+    <header>
+      <div class="brand">
+        <img src="/branding/logo.svg" alt="scenario.generator" />
+      </div>
+      <button id="scenario-load-button" type="button">Load scenario</button>
+      <input
+        id="scenario-upload"
+        class="visually-hidden"
+        type="file"
+        tabindex="-1"
+        accept=".json,.mcap,.xosc,.xodr,.xml"
+        aria-label="Choose a scenario file"
+      />
+      <button id="map-load-button" type="button">Load map</button>
+      <input
+        id="map-upload"
+        class="visually-hidden"
+        type="file"
+        tabindex="-1"
+        accept=".xodr,.xml"
+        aria-label="Choose an OpenDRIVE map file"
+      />
+      <button data-export="config">Save config</button>
+      <details class="help-options">
+        <summary>Help</summary>
+        <div>
+          <label class="check-label">
+            <input id="show-tooltips" type="checkbox" />
+            <span>Show contextual help</span>
+          </label>
+          <label class="check-label">
+            <input id="show-adjustment-warnings" type="checkbox" />
+            <span>Show adjustment warnings</span>
+          </label>
+          <button id="help" class="primary-action">How to use</button>
+        </div>
+      </details>
+      <a
+        id="tutorials"
+        class="header-legal-action"
+        href="/docs/README.md"
+        target="_blank"
+        rel="noopener"
+      >Tutorials</a>
+      <button id="about" class="header-legal-action">About</button>
+      <a
+        class="header-legal-action"
+        href="https://scenario.center/imprint/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >Imprint</a>
+      <button id="data-privacy" class="header-legal-action">Data privacy</button>
+      <div class="status" id="status" role="status">Ready</div>
+    </header>
+    <main id="application-main" tabindex="-1">
+      <h1 class="visually-hidden">scenario.generator editor</h1>
+      <aside class="actors panel" aria-labelledby="primary-title">
+        <div class="panel-title">
+          <span id="primary-title" role="heading" aria-level="2">Actors</span>
+        </div>
+        <div id="actor-list" role="group" aria-labelledby="primary-title"></div>
+        <div id="road-list" role="group" aria-labelledby="primary-title" hidden></div>
+        <hr />
+        <div id="actor-actions">
+          <button id="add-actor">Add actor</button>
+          <button id="delete-actor" class="danger">Delete actor</button>
+        </div>
+        <hr />
+        <div class="panel-title" id="inspector-title" role="heading" aria-level="2">Actor inspector</div>
+        <div id="actor-form"></div>
+        <div id="road-form" hidden></div>
+      </aside>
+      <section class="workspace" aria-label="Scenario workspace">
+        <div class="canvas-toolbar">
+          <button id="mode-toggle">Switch to map mode</button>
+          <button id="fit-view">Fit view</button>
+          <details>
+            <summary>View</summary>
+            <div id="view-options"></div>
+          </details>
+          <details id="measurement-options">
+            <summary>Measure</summary>
+            <div class="measurement-menu">
+              <button id="measure-distance" type="button">Distance</button>
+              <button id="measure-radius" type="button">Radius</button>
+              <button id="clear-measure" type="button">Clear measure</button>
+            </div>
+          </details>
+          <span id="measurement-result" role="status" aria-live="polite"></span>
+        </div>
+        <div id="canvas-presentation" class="canvas-presentation">
+          <div class="canvas-frame">
+            <canvas
+              id="map-canvas"
+              tabindex="0"
+              role="application"
+              aria-label="Interactive scenario canvas"
+              aria-describedby="canvas-instructions canvas-summary"
+            >
+              The scenario can also be edited using the actor, road, and point
+              tables on this page.
+            </canvas>
+            <p id="canvas-instructions" class="visually-hidden">
+              Use the arrow keys to move the canvas cursor. Hold Shift for
+              larger steps and Alt to pan. Press Enter or Space to add or
+              select at the cursor. Press plus or minus to zoom, and press F
+              to fit the view.
+            </p>
+            <p id="canvas-summary" class="visually-hidden"></p>
+            <button
+              id="canvas-fullscreen"
+              class="canvas-fullscreen"
+              type="button"
+              aria-label="Enter fullscreen"
+              title="Enter fullscreen"
+            >
+              <svg
+                class="material-icon"
+                data-fullscreen-icon="enter"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+              </svg>
+              <svg
+                class="material-icon"
+                data-fullscreen-icon="exit"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                hidden
+              >
+                <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
+              </svg>
+            </button>
+          </div>
+          <section class="playback panel" aria-label="Scenario playback">
+            <button id="play">Play</button>
+            <button id="reset-playback">Reset</button>
+            <label for="time-slider" class="visually-hidden">Scenario playback time</label>
+            <input
+              id="time-slider"
+              type="range"
+              min="0"
+              max="1"
+              value="0"
+              step="0.01"
+            />
+            <output id="time-output" for="time-slider">0.00 s</output>
+          </section>
+        </div>
+        <section id="speed-profile" class="panel" hidden>
+          <div class="panel-title" role="heading" aria-level="2">
+            Velocity profile
+            <span>Drag a node or edit its exact speed in the trajectory table</span>
+          </div>
+          <canvas
+            id="speed-profile-canvas"
+            role="img"
+            aria-label="Velocity profile for the selected actor. Exact speeds can be edited in the trajectory points table."
+          ></canvas>
+        </section>
+        <section id="tables" class="tables panel">
+          <nav role="tablist" aria-label="Scenario data tables">
+            <button id="waypoints-tab" role="tab" aria-controls="waypoints-panel" data-tab="waypoints">Trajectory points</button>
+            <button id="roads-tab" role="tab" aria-controls="roads-panel" data-tab="roads">Road waypoints</button>
+            <button id="relations-tab" role="tab" aria-controls="relations-panel" data-tab="relations">Road relations</button>
+            <button id="gaps-tab" role="tab" aria-controls="gaps-panel" data-tab="gaps">Perception gaps</button>
+          </nav>
+          <div class="table-content" id="waypoints-panel" role="tabpanel" aria-labelledby="waypoints-tab" tabindex="0">
+            <div class="panel-title">
+              <span role="heading" aria-level="2">Trajectory points</span>
+              <button id="add-point">Add point</button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Actions</th>
+                  <th scope="col">Time [s]</th>
+                  <th scope="col">X [m]</th>
+                  <th scope="col">Y [m]</th>
+                  <th scope="col">Speed [m/s]</th>
+                </tr>
+              </thead>
+              <tbody id="waypoint-body"></tbody>
+            </table>
+          </div>
+          <div class="table-content" id="roads-panel" role="tabpanel" aria-labelledby="roads-tab" tabindex="0" hidden>
+            <div class="panel-title">
+              <span role="heading" aria-level="2">Road waypoints</span>
+              <button id="add-road-point">Add point</button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Actions</th>
+                  <th scope="col">X [m]</th>
+                  <th scope="col">Y [m]</th>
+                </tr>
+              </thead>
+              <tbody id="road-body"></tbody>
+            </table>
+          </div>
+          <div class="table-content" id="relations-panel" role="tabpanel" aria-labelledby="relations-tab" tabindex="0" hidden>
+            <div class="panel-title"><span role="heading" aria-level="2">Road relations</span></div>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Actions</th>
+                  <th scope="col">Road</th>
+                  <th scope="col">Predecessor</th>
+                  <th scope="col">Predecessor lane</th>
+                  <th scope="col">Successor</th>
+                  <th scope="col">Successor lane</th>
+                </tr>
+              </thead>
+              <tbody id="relations-body"></tbody>
+            </table>
+          </div>
+          <div class="table-content" id="gaps-panel" role="tabpanel" aria-labelledby="gaps-tab" tabindex="0" hidden>
+            <div class="panel-title">
+              <span role="heading" aria-level="2">Perception gaps</span>
+              <button id="add-gap">+ Gap</button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Actor</th>
+                  <th scope="col">Start [s]</th>
+                  <th scope="col">End [s]</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="gap-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+      <aside class="inspector panel" aria-label="Scenario controls and export">
+        <div id="editing-controls">
+          <div class="panel-title" role="heading" aria-level="2">Editing controls</div>
+          <label>
+            Time step [s]
+            <input id="time-step" type="number" min="0.001" step="0.1" />
+          </label>
+          <button id="trajectory-direction">
+            Timing edits: forward
+          </button>
+          <button id="waypoint-timing">New points: fixed time step</button>
+          <label id="lane-snap-control" class="check-label">
+            <input id="lane-snap" type="checkbox" />
+            <span>Snap points to lane</span>
+          </label>
+          <button id="delete-last-point">Delete last point</button>
+          <button id="clear-actor">Clear trajectory</button>
+          <div id="map-actions" hidden>
+            <hr />
+            <div class="panel-title" role="heading" aria-level="2">Map controls</div>
+            <button id="connect-roads">Connect road lanes</button>
+            <button id="clear-road-links">Clear selected road links</button>
+            <button id="delete-last-road-point">
+              Delete last road waypoint
+            </button>
+            <button id="delete-road">
+              Delete selected road
+            </button>
+            <button id="clear-map">Clear map</button>
+          </div>
+        </div>
+        <hr />
+        <details class="additional-info">
+          <summary>Additional scenario information</summary>
+          <label>
+            Author
+            <input id="file-author" autocomplete="name" />
+          </label>
+          <label>
+            Description
+            <input id="file-description" />
+          </label>
+          <label>
+            OpenSCENARIO version
+            <select id="xosc-rev-minor">
+              <option value="0">1.0</option>
+              <option value="1">1.1</option>
+            </select>
+          </label>
+          <label>
+            OpenDRIVE map path
+            <input id="xosc-map-path" />
+          </label>
+          <label>
+            SimulationTimeCondition factor
+            <input id="simulation-factor" type="number" min="1" step="0.1" />
+          </label>
+          <hr />
+          <label class="check-label">
+            <input id="environment-enabled" type="checkbox" />
+            <span>Write environmental information</span>
+          </label>
+          <div id="environment-fields">
+            <div class="environment-template-picker">
+              <select
+                id="environment-template-select"
+                aria-label="Environmental template"
+              >
+                <option value="">No template</option>
+              </select>
+              <button
+                id="environment-template-button"
+                type="button"
+                class="file-button environmental-template"
+                aria-label="Load custom environmental JSON template"
+              ></button>
+              <input
+                id="environment-template"
+                class="visually-hidden"
+                tabindex="-1"
+                type="file"
+                accept=".json"
+                aria-label="Choose a custom environmental JSON template"
+              />
+            </div>
+            <label>
+              Name
+              <input id="environment-name" value="environment" />
+            </label>
+            <label class="check-label">
+              <input id="environment-time-enabled" type="checkbox" />
+              <span>Write time of day</span>
+            </label>
+            <label>
+              Time of day
+              <input id="environment-time" placeholder="1970-01-01T12:00:00" />
+            </label>
+            <label class="check-label">
+              <input id="environment-weather-enabled" type="checkbox" />
+              <span>Write weather</span>
+            </label>
+            <label>
+              Cloud state
+              <input id="environment-cloud" value="free" />
+            </label>
+            <label>
+              Sun intensity
+              <input
+                id="environment-sun-intensity"
+                type="number"
+                step="0.1"
+                value="1"
+              />
+            </label>
+            <label>
+              Sun azimuth
+              <input
+                id="environment-sun-azimuth"
+                type="number"
+                step="0.1"
+                value="0"
+              />
+            </label>
+            <label>
+              Sun elevation
+              <input
+                id="environment-sun-elevation"
+                type="number"
+                step="0.1"
+                value="1"
+              />
+            </label>
+            <label>
+              Fog visual range [m]
+              <input id="environment-fog-range" type="number" value="100000" />
+            </label>
+            <label>
+              Precipitation type
+              <input id="environment-precipitation-type" value="dry" />
+            </label>
+            <label>
+              Precipitation intensity
+              <input
+                id="environment-precipitation-intensity"
+                type="number"
+                step="0.1"
+                value="0"
+              />
+            </label>
+            <label class="check-label">
+              <input id="environment-road-enabled" type="checkbox" />
+              <span>Write road condition</span>
+            </label>
+            <label>
+              Road friction
+              <input
+                id="environment-road-friction"
+                type="number"
+                step="0.1"
+                value="1"
+              />
+            </label>
+            <button
+              id="save-environment-template"
+              type="button"
+              class="secondary"
+            >
+              Save environmental information as template
+            </button>
+          </div>
+        </details>
+        <hr />
+        <div class="panel-title" role="heading" aria-level="2">Export controls</div>
+        <label>
+          Output name
+          <input id="output-name" value="scenario" />
+        </label>
+        <label class="check-label">
+          <input id="export-2d" type="checkbox" />
+          <span>Export trajectories in 2D (z = 0)</span>
+        </label>
+        <details class="additional-info">
+          <summary>Scenario Quality Checker</summary>
+          <label class="check-label">
+            <input id="show-sqc-warnings" type="checkbox" />
+            <span>Show SQC warnings</span>
+          </label>
+          <label class="check-label">
+            <input id="show-sqc-errors" type="checkbox" />
+            <span>Show SQC errors</span>
+          </label>
+          <button id="quality-check" class="secondary">
+            Check scenario quality
+          </button>
+        </details>
+        <fieldset class="batch-export">
+          <legend>Generate files</legend>
+          <label class="check-label">
+            <input id="batch-export-mcap" type="checkbox" checked />
+            <span>Omega-Prime (.mcap)</span>
+          </label>
+          <label class="check-label">
+            <input id="batch-export-xosc" type="checkbox" />
+            <span>Scenario (.xosc)</span>
+          </label>
+          <label class="check-label">
+            <input id="batch-export-xodr" type="checkbox" />
+            <span>Map (.xodr)</span>
+          </label>
+          <label class="check-label">
+            <input id="batch-export-json" type="checkbox" />
+            <span>Trajectories (.json)</span>
+          </label>
+          <button id="edit-postprocessing" type="button" class="secondary">Configure postprocessing</button>
+          <p>
+            Scenario config and any map it references are always included. The
+            selected files are downloaded as one ZIP bundle.
+          </p>
+          <button id="generate-files">Generate files</button>
+        </fieldset>
+      </aside>
+    </main>
+    <template id="actor-template">
+      <button class="actor">
+        <span class="actor-dot"></span>
+        <span class="actor-name"></span>
+        <small></small>
+      </button>
+    </template>
+    <dialog id="scenario-load-dialog" class="load-dialog" aria-labelledby="scenario-load-dialog-title">
+      <section class="parameter-dialog panel">
+        <div class="panel-title">
+          <span id="scenario-load-dialog-title">Load scenario</span>
+        </div>
+        <label for="default-scenario-select">Default scenario</label>
+        <select id="default-scenario-select" aria-describedby="default-scenario-hint" disabled>
+          <option value="">Loading defaults…</option>
+        </select>
+        <span id="default-scenario-hint" class="load-hint"></span>
+        <div class="dialog-actions">
+          <button id="load-default-scenario" type="button" disabled>Load default</button>
+          <button id="scenario-upload-button" type="button">Upload scenario</button>
+          <button id="close-scenario-load" type="button">Cancel</button>
+        </div>
+      </section>
+    </dialog>
+    <dialog id="map-load-dialog" class="load-dialog" aria-labelledby="map-load-dialog-title">
+      <section class="parameter-dialog panel">
+        <div class="panel-title">
+          <span id="map-load-dialog-title">Load map</span>
+        </div>
+        <label for="default-map-select">Default map</label>
+        <select id="default-map-select" aria-describedby="default-map-hint" disabled>
+          <option value="">Loading defaults…</option>
+        </select>
+        <span id="default-map-hint" class="load-hint"></span>
+        <div class="dialog-actions">
+          <button id="load-default-map" type="button" disabled>Load default</button>
+          <button id="map-upload-button" type="button">Upload map</button>
+          <button id="close-map-load" type="button">Cancel</button>
+        </div>
+      </section>
+    </dialog>
+    <dialog id="parameter-dialog" aria-labelledby="parameter-dialog-title">
+      <form method="dialog" class="parameter-dialog panel">
+        <div class="panel-title">
+          <span id="parameter-dialog-title">Parameter declarations</span>
+          <button value="cancel">Close</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Parameter type</th>
+              <th scope="col">Value</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="parameter-body"></tbody>
+        </table>
+        <div class="parameter-actions">
+          <button id="add-parameter" type="button" class="secondary">
+            Add declaration
+          </button>
+          <button id="save-parameters" value="default">
+            Save declarations
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="quality-dialog" aria-labelledby="quality-dialog-title">
+      <section class="parameter-dialog panel">
+        <div class="panel-title">
+          <span id="quality-dialog-title">Scenario Quality Checker</span>
+          <button id="close-quality">Close</button>
+        </div>
+        <div id="quality-result" role="status"></div>
+        <button id="quality-pdf" class="secondary">Download PDF report</button>
+      </section>
+    </dialog>
+    <dialog id="export-quality-dialog" aria-labelledby="export-quality-dialog-title">
+      <section class="parameter-dialog panel">
+        <div class="panel-title"><span id="export-quality-dialog-title">Scenario Quality Checker</span></div>
+        <p id="export-quality-result" class="quality-problems"></p>
+        <p>Export anyway?</p>
+        <div class="dialog-actions">
+          <button id="cancel-export-quality" class="secondary">Cancel</button>
+          <button id="confirm-export-quality">Export anyway</button>
+        </div>
+      </section>
+    </dialog>
+    <dialog id="help-dialog" aria-labelledby="help-dialog-title">
+      <section class="parameter-dialog panel">
+        <div class="panel-title">
+          <span id="help-dialog-title">How to use</span>
+          <button id="close-help">Close</button>
+        </div>
+        <div id="help-content" class="document-content" tabindex="0" aria-label="scenario.generator usage help"></div>
+      </section>
+    </dialog>
+    <dialog id="data-privacy-dialog" aria-labelledby="data-privacy-dialog-title">
+      <section class="parameter-dialog panel data-privacy-dialog-content">
+        <div class="panel-title">
+          <span id="data-privacy-dialog-title">Data privacy</span>
+          <button id="close-data-privacy">Close</button>
+        </div>
+        <a
+          class="data-privacy-link"
+          href="https://scenario.center/privacy-policy/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >scenario.center privacy policy</a>
+        <div class="dialog-actions data-privacy-actions">
+          <button id="delete-my-data" class="data-privacy-delete-action">Delete my data now</button>
+        </div>
+      </section>
+    </dialog>
+    <dialog id="about-dialog" aria-label="About scenario.generator">
+      <section class="parameter-dialog panel about-dialog-content">
+        <div class="about-dialog-actions">
+          <button id="close-about">Close</button>
+        </div>
+        <div id="about-content"></div>
+      </section>
+    </dialog>
+    <dialog id="postprocessing-dialog" aria-labelledby="postprocessing-dialog-title">
+      <section class="parameter-dialog panel">
+        <div class="panel-title"><span id="postprocessing-dialog-title">Postprocessing</span><button id="close-postprocessing">Close</button></div>
+        <div class="postprocessing-layout"><div id="postprocessing-tools"></div><div id="postprocessing-parameters"></div></div>
+      </section>
+    </dialog>
+    <script src="/assets/scenario-state.js"></script>
+    <script src="/assets/scene-canvas.js"></script>
+    <script src="/assets/canvas-fullscreen.js"></script>
+    <script src="/assets/parameter-dialog.js"></script>
+    <script src="/assets/file-exports.js"></script>
+    <script src="/assets/map-editor.js"></script>
+    <script src="/assets/runtime-controls.js"></script>
+  </body>
+</html>

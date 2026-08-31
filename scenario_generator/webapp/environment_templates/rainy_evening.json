@@ -1,0 +1,12 @@
+{
+  "name": "rainy_evening",
+  "time_of_day": "2026-06-26T18:30:00",
+  "cloud_state": "rainy",
+  "sun_intensity": 0.2,
+  "sun_azimuth": 220.0,
+  "sun_elevation": 8.0,
+  "fog_visual_range": 25000.0,
+  "precipitation_type": "rain",
+  "precipitation_intensity": 0.8,
+  "road_friction": 0.65
+}

@@ -1,0 +1,55 @@
+{
+  "version": 4,
+  "title": "VRU_crossing_from_left",
+  "description": "A pedestrian crosses from the left on the eastern approach of the RITA junction in front of an approaching vehicle.",
+  "map_path": "../default_maps/RITA-junction.xodr",
+  "detection_gaps": [],
+  "additional_scenario_information": {
+    "file_header": {
+      "author": "scenario.generator",
+      "description": "VRU_crossing_from_left on the RITA junction created with scenario.generator",
+      "revMajor": 1,
+      "revMinor": 1
+    },
+    "xosc_map_path": "RITA-junction.xodr",
+    "simulation_time_condition_factor": 1,
+    "postprocessing_scripts": [],
+    "postprocessing_parameters": {}
+  },
+  "vehicles": [
+    {
+      "name": "approaching_vehicle",
+      "actor_type": "vehicle",
+      "dimensions": {
+        "length_m": 4.5,
+        "width_m": 1.8,
+        "height_m": 1.6,
+        "actor_type": "vehicle"
+      },
+      "waypoints": [
+        {"time_s": 0.0, "x_m": 42.001, "y_m": -0.040},
+        {"time_s": 2.0, "x_m": 35.252, "y_m": -0.164},
+        {"time_s": 4.0, "x_m": 28.499, "y_m": -0.172},
+        {"time_s": 6.0, "x_m": 21.749, "y_m": -0.135},
+        {"time_s": 8.0, "x_m": 14.999, "y_m": -0.030}
+      ]
+    },
+    {
+      "name": "pedestrian",
+      "actor_type": "pedestrian",
+      "dimensions": {
+        "length_m": 0.5,
+        "width_m": 0.5,
+        "height_m": 1.75,
+        "actor_type": "pedestrian"
+      },
+      "waypoints": [
+        {"time_s": 0.0, "x_m": 28.499, "y_m": -5.823},
+        {"time_s": 2.0, "x_m": 28.499, "y_m": -2.998},
+        {"time_s": 4.0, "x_m": 28.499, "y_m": -0.172},
+        {"time_s": 6.0, "x_m": 28.499, "y_m": 3.116},
+        {"time_s": 8.0, "x_m": 28.499, "y_m": 6.404}
+      ]
+    }
+  ]
+}

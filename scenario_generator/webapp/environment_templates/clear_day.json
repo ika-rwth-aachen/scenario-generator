@@ -1,0 +1,12 @@
+{
+  "name": "clear_day",
+  "time_of_day": "2026-06-26T12:00:00",
+  "cloud_state": "free",
+  "sun_intensity": 1.0,
+  "sun_azimuth": 0.0,
+  "sun_elevation": 60.0,
+  "fog_visual_range": 100000.0,
+  "precipitation_type": "dry",
+  "precipitation_intensity": 0.0,
+  "road_friction": 1.0
+}
