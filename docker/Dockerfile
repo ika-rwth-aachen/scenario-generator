@@ -24,9 +24,12 @@ RUN uv sync --locked --no-dev --no-editable \
 
 FROM python:3.11-slim
 
+ARG SCENARIO_GENERATOR_BASE_PATH=""
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MPLBACKEND=Agg \
+    SCENARIO_GENERATOR_BASE_PATH=${SCENARIO_GENERATOR_BASE_PATH} \
     PATH="/opt/scenario-generator-venv/bin:$PATH"
 
 WORKDIR /app

@@ -80,6 +80,34 @@ POSTPROCESSING_SCRIPT_DIRECTORY = Path(
 )
 SESSION_COOKIE_NAME = "scenario_generator_session"
 SESSION_ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
+BASE_PATH_PATTERN = re.compile(r"/[A-Za-z0-9._~-]+(?:/[A-Za-z0-9._~-]+)*")
+BASE_PATH_PLACEHOLDER = "__SCENARIO_GENERATOR_BASE_PATH__"
+
+
+def normalize_base_path(value: str) -> str:
+    """Return an optional normalized URL prefix or reject an unsafe value."""
+    stripped = value.strip()
+    if not stripped or stripped == "/":
+        return ""
+    normalized = f"/{stripped.strip('/')}"
+    if (
+        not BASE_PATH_PATTERN.fullmatch(normalized)
+        or any(part in {".", ".."} for part in normalized.split("/"))
+    ):
+        raise ValueError(
+            "SCENARIO_GENERATOR_BASE_PATH must be an absolute URL path such as "
+            "'/generator'."
+        )
+    return normalized
+
+
+BASE_PATH = normalize_base_path(os.getenv("SCENARIO_GENERATOR_BASE_PATH", ""))
+
+
+def application_url(path: str, base_path: str = BASE_PATH) -> str:
+    """Prefix one application-absolute URL with the configured base path."""
+    normalized_path = path if path.startswith("/") else f"/{path}"
+    return f"{base_path}{normalized_path}"
 
 
 def positive_environment_integer(name: str, default: int) -> int:
@@ -91,9 +119,13 @@ def positive_environment_integer(name: str, default: int) -> int:
     return value if value > 0 else default
 
 
-def session_cookie_path() -> str:
+def session_cookie_path(request: Request | None = None) -> str:
     """Return a safe cookie path for standalone or reverse-proxy deployments."""
-    configured = os.getenv("SCENARIO_GENERATOR_SESSION_COOKIE_PATH", "/").strip()
+    request_base_path = ""
+    if request is not None:
+        request_base_path = normalize_base_path(str(request.scope.get("root_path", "")))
+    configured = os.getenv("SCENARIO_GENERATOR_SESSION_COOKIE_PATH", "").strip()
+    configured = configured or request_base_path or BASE_PATH or "/"
     if (
         not configured.startswith("/")
         or any(character in configured for character in ";\r\n\t ?#")
@@ -1538,7 +1570,7 @@ async def bind_scenario_session(request: Request, call_next: Any) -> Any:
             httponly=True,
             samesite="lax",
             secure=secure_cookie_for_request(request),
-            path=session_cookie_path(),
+            path=session_cookie_path(request),
         )
     return response
 
@@ -1546,7 +1578,11 @@ async def bind_scenario_session(request: Request, call_next: Any) -> Any:
 @app.middleware("http")
 async def reject_oversized_upload_request(request: Request, call_next: Any) -> Any:
     """Reject known oversized multipart bodies before FastAPI parses them."""
-    if request.url.path in {"/api/import", "/api/map"}:
+    root_path = normalize_base_path(str(request.scope.get("root_path", "")))
+    application_path = (
+        request.url.path.removeprefix(root_path) if root_path else request.url.path
+    )
+    if application_path in {"/api/import", "/api/map"}:
         content_length = request.headers.get("content-length")
         if content_length:
             try:
@@ -1576,9 +1612,18 @@ def apply_imported_scenario(
         scenario.add_actor()
 
 
+def render_index(base_path: str = BASE_PATH) -> str:
+    """Render the application shell with deployment-prefixed URLs."""
+    return (STATIC_DIRECTORY / "index.html").read_text(encoding="utf-8").replace(
+        BASE_PATH_PLACEHOLDER,
+        base_path,
+    )
+
+
 @app.get("/")
-def index() -> FileResponse:
-    return FileResponse(STATIC_DIRECTORY / "index.html")
+def index(request: Request) -> HTMLResponse:
+    request_base_path = normalize_base_path(str(request.scope.get("root_path", "")))
+    return HTMLResponse(render_index(request_base_path))
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -1603,7 +1648,7 @@ def delete_session_data(request: Request) -> JSONResponse:
     response = JSONResponse({"deleted": True})
     response.delete_cookie(
         SESSION_COOKIE_NAME,
-        path=session_cookie_path(),
+        path=session_cookie_path(request),
         secure=secure_cookie_for_request(request),
         httponly=True,
         samesite="lax",
@@ -1641,7 +1686,7 @@ def get_about() -> dict[str, str]:
 
 
 @app.get("/docs/{document_name}")
-def documentation_page(document_name: str):
+def documentation_page(document_name: str, request: Request):
     """Render one maintained documentation page for browser use."""
     if Path(document_name).name != document_name or not document_name.endswith(".md"):
         raise HTTPException(status_code=404, detail="Documentation page not found")
@@ -1652,6 +1697,11 @@ def documentation_page(document_name: str):
     rendered = MarkdownIt("commonmark", {"html": False}).enable("table").render(
         document_source
     )
+    base_path = normalize_base_path(str(request.scope.get("root_path", "")))
+    rendered = rendered.replace(
+        'href="/docs/',
+        f'href="{application_url("/docs/", base_path)}',
+    )
     first_heading = next(
         (line.removeprefix("# ").strip() for line in document_source.splitlines() if line.startswith("# ")),
         document_name.removesuffix(".md").replace("-", " ").title(),
@@ -1661,18 +1711,23 @@ def documentation_page(document_name: str):
     if document_name != "README.md":
         tutorials = sorted(DOCUMENTATION_DIRECTORY.glob("[0-9][0-9]-*.md"))
         tutorial_names = [tutorial.name for tutorial in tutorials]
-        navigation_links = ["<a href='/docs/README.md'>&larr; All examples</a>"]
+        navigation_links = [
+            f"<a href='{application_url('/docs/README.md', base_path)}'>"
+            "&larr; All examples</a>"
+        ]
         if document_name in tutorial_names:
             current_index = tutorial_names.index(document_name)
             if current_index:
                 previous_name = tutorial_names[current_index - 1]
                 navigation_links.append(
-                    f"<a href='/docs/{previous_name}'>Previous tutorial</a>"
+                    f"<a href='{application_url(f'/docs/{previous_name}', base_path)}'>"
+                    "Previous tutorial</a>"
                 )
             if current_index + 1 < len(tutorial_names):
                 next_name = tutorial_names[current_index + 1]
                 navigation_links.append(
-                    f"<a href='/docs/{next_name}'>Next tutorial</a>"
+                    f"<a href='{application_url(f'/docs/{next_name}', base_path)}'>"
+                    "Next tutorial</a>"
                 )
         navigation_content = " &middot; ".join(navigation_links)
         navigation = (
@@ -1690,8 +1745,8 @@ def documentation_page(document_name: str):
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'>"
         f"<title>{escape(first_heading)} – scenario.generator</title>"
-        "<link rel='icon' href='/branding/logo_icon.png?v=transparent' type='image/png'>"
-        "<link rel='stylesheet' href='/assets/style.css'>"
+        f"<link rel='icon' href='{application_url('/branding/logo_icon.png?v=transparent', base_path)}' type='image/png'>"
+        f"<link rel='stylesheet' href='{application_url('/assets/style.css', base_path)}'>"
         "<style>.docs-header-spacer{flex:1}.docs-content{display:block;height:auto;"
         "max-width:960px;margin:40px auto;padding:0 24px;color:#13283f;"
         "font:16px/1.6 Helvetica,Arial,sans-serif}.docs-content h1,.docs-content h2{"
@@ -1708,8 +1763,8 @@ def documentation_page(document_name: str):
         "background:#f1f5f7;"
         "padding:2px 4px;border-radius:3px}</style></head><body>"
         "<a class='skip-link' href='#documentation-main'>Skip to documentation</a>"
-        "<header><a class='brand' href='/' aria-label='Back to scenario.generator'>"
-        "<img src='/branding/logo.svg' alt='scenario.generator'></a>"
+        f"<header><a class='brand' href='{application_url('/', base_path)}' aria-label='Back to scenario.generator'>"
+        f"<img src='{application_url('/branding/logo.svg', base_path)}' alt='scenario.generator'></a>"
         "<span class='docs-header-spacer'></span>"
         "<button id='docs-about' class='header-legal-action'>About</button>"
         "<a class='header-legal-action' href='https://scenario.center/imprint/' "
@@ -1745,7 +1800,7 @@ def documentation_page(document_name: str):
         "if(event.target===privacyDialog)privacyDialog.close();});"
         "document.getElementById('docs-delete-my-data').addEventListener('click',async(event)=>{"
         "event.currentTarget.disabled=true;"
-        "const response=await fetch('/api/session',{method:'DELETE'});"
+        f"const response=await fetch('{application_url('/api/session', base_path)}',{{method:'DELETE'}});"
         "if(response.ok){window.location.reload();return;}"
         "event.currentTarget.disabled=false;window.alert('Your data could not be deleted.');"
         "});</script></body></html>"
@@ -2859,6 +2914,30 @@ def quality_check_pdf(payload: dict[str, Any]) -> FileResponse:
     except Exception as exc:  # noqa: BLE001 - checker errors reach the browser.
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return FileResponse(pdf_path, filename=pdf_path.name)
+
+
+def application_with_base_path(
+    route_application: FastAPI,
+    base_path: str,
+) -> FastAPI:
+    """Mount the web application below an optional URL prefix."""
+    normalized_base_path = normalize_base_path(base_path)
+    if not normalized_base_path:
+        return route_application
+    parent_application = FastAPI(
+        title="scenario.generator",
+        version="0.1.0",
+        lifespan=application_lifespan,
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+    )
+    parent_application.mount(normalized_base_path, route_application)
+    return parent_application
+
+
+route_app = app
+app = application_with_base_path(route_app, BASE_PATH)
 
 
 def main():
