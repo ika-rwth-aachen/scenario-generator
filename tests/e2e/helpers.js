@@ -1,7 +1,7 @@
 const { expect } = require("@playwright/test");
 
 async function openScenario(page) {
-  await page.goto("/");
+  await page.goto("./");
   await expect(page.locator("#actor-list .actor")).toHaveCount(2);
 }
 

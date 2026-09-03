@@ -5,6 +5,14 @@
 const state = { scenario: null, selected: null, view: null, camera: null, playbackTime: 0, measurementPoints: [], measurementMode: "off", measurementTool: null, playing: false, dragTarget: null, didDrag: false, keyboardCursorVisible: false, metrics: {}, suppressCanvasClick: false, additionalInformationDraft: null };
 // Keep DOM lookups concise without introducing a client-side framework.
 const $ = (selector) => document.querySelector(selector);
+const basePathMetadata = document.querySelector('meta[name="scenario-generator-base-path"]');
+const applicationBasePath = basePathMetadata ? basePathMetadata.content : "";
+
+/** Resolve an application path without escaping an optional deployment prefix. */
+function applicationUrl(path) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${applicationBasePath}${normalizedPath}`;
+}
 // Keep the palette aligned with the established desktop canvas.
 const actorColors = ["#a64b4b", "#416b94", "#39704a", "#8c5a2b", "#73578c", "#2f6f73"];
 const tooltipSpecs = [
@@ -95,7 +103,7 @@ async function api(path, options = {}, parseJson = true) {
   }
   // Serialize mutations so an older browser request cannot overwrite a newer one.
   const request = async () => {
-    const response = await fetch(path, options);
+    const response = await fetch(applicationUrl(path), options);
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       throw new Error(body.detail || response.statusText);

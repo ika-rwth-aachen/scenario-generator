@@ -13,7 +13,7 @@ import scenario_generator.webapp.server as web_server
 from scenario_generator.map.map import LaneCrossSection, MapPolyline
 
 
-def request_with_scheme(scheme: str) -> Request:
+def request_with_scheme(scheme: str, root_path: str = "") -> Request:
     return Request(
         {
             "type": "http",
@@ -24,6 +24,7 @@ def request_with_scheme(scheme: str) -> Request:
             "raw_path": b"/",
             "query_string": b"",
             "headers": [],
+            "root_path": root_path,
             "client": ("127.0.0.1", 1234),
             "server": ("testserver", 443 if scheme == "https" else 80),
         }
@@ -154,6 +155,12 @@ def test_web_secure_cookie_uses_https_or_explicit_setting(monkeypatch):
 def test_web_session_cookie_path_supports_reverse_proxy_prefix(monkeypatch):
     monkeypatch.delenv("SCENARIO_GENERATOR_SESSION_COOKIE_PATH", raising=False)
     assert web_server.session_cookie_path() == "/"
+    assert (
+        web_server.session_cookie_path(
+            request_with_scheme("https", root_path="/generator")
+        )
+        == "/generator"
+    )
 
     monkeypatch.setenv("SCENARIO_GENERATOR_SESSION_COOKIE_PATH", "/generator/")
     assert web_server.session_cookie_path() == "/generator"
@@ -161,6 +168,43 @@ def test_web_session_cookie_path_supports_reverse_proxy_prefix(monkeypatch):
     for invalid_path in ("generator", "/generator; Secure", "/generator path"):
         monkeypatch.setenv("SCENARIO_GENERATOR_SESSION_COOKIE_PATH", invalid_path)
         assert web_server.session_cookie_path() == "/"
+
+
+@pytest.mark.parametrize(
+    ("configured", "expected"),
+    [
+        ("", ""),
+        ("/", ""),
+        ("generator", "/generator"),
+        ("/tools/generator/", "/tools/generator"),
+    ],
+)
+def test_web_normalizes_base_path(configured, expected):
+    assert web_server.normalize_base_path(configured) == expected
+
+
+@pytest.mark.parametrize(
+    "configured",
+    ["/../generator", "/generator?debug=1", "/generator path"],
+)
+def test_web_rejects_unsafe_base_path(configured):
+    with pytest.raises(ValueError, match="SCENARIO_GENERATOR_BASE_PATH"):
+        web_server.normalize_base_path(configured)
+
+
+def test_web_mounts_routes_below_optional_base_path():
+    assert web_server.application_with_base_path(web_server.route_app, "") is web_server.route_app
+
+    prefixed_app = web_server.application_with_base_path(
+        web_server.route_app,
+        "/generator",
+    )
+
+    assert prefixed_app is not web_server.route_app
+    assert any(
+        route.path == "/generator" and route.app is web_server.route_app
+        for route in prefixed_app.routes
+    )
 
 
 def test_web_scenario_serializes_actor_state():
@@ -594,7 +638,10 @@ def test_web_lists_and_loads_bundled_default_maps(tmp_path, monkeypatch):
 
 
 def test_web_serves_use_case_documentation():
-    response = web_server.documentation_page("01-intersection-conflict.md")
+    response = web_server.documentation_page(
+        "01-intersection-conflict.md",
+        request_with_scheme("http"),
+    )
 
     body = response.body.decode()
     assert "<h1>Create an intersecting conflict (no map)</h1>" in body
@@ -616,7 +663,7 @@ def test_web_serves_use_case_documentation():
 
 
 def test_web_renders_documentation_overview_table():
-    response = web_server.documentation_page("README.md")
+    response = web_server.documentation_page("README.md", request_with_scheme("http"))
 
     body = response.body.decode()
     assert "<table>" in body
@@ -625,7 +672,10 @@ def test_web_renders_documentation_overview_table():
 
 
 def test_web_openads_tutorial_links_to_controller_download():
-    response = web_server.documentation_page("04-openads-scenario.md")
+    response = web_server.documentation_page(
+        "04-openads-scenario.md",
+        request_with_scheme("http"),
+    )
 
     body = response.body.decode()
     assert 'href="/docs/download/karl-controller-template.json"' in body
@@ -638,7 +688,10 @@ def test_web_openads_tutorial_links_to_controller_download():
 
 
 def test_web_import_tutorial_links_to_map_download():
-    response = web_server.documentation_page("03-import-adapt-map-scenario.md")
+    response = web_server.documentation_page(
+        "03-import-adapt-map-scenario.md",
+        request_with_scheme("http"),
+    )
 
     body = response.body.decode()
     assert 'href="/docs/download/tutorial-straight-road.xodr"' in body
@@ -699,7 +752,7 @@ def test_web_rejects_unknown_documentation_file():
 
 
 def test_web_help_menu_links_to_tutorial_overview():
-    index = (web_server.STATIC_DIRECTORY / "index.html").read_text(encoding="utf-8")
+    index = web_server.render_index()
 
     assert 'id="tutorials"' in index
     assert 'href="/docs/README.md"' in index
@@ -707,6 +760,22 @@ def test_web_help_menu_links_to_tutorial_overview():
     assert 'id="about-dialog"' in index
     assert '>Upload scenario</button>' in index
     assert '>Upload map</button>' in index
+
+
+def test_web_prefixes_application_and_documentation_urls():
+    index = web_server.render_index("/generator")
+    documentation = web_server.documentation_page(
+        "04-openads-scenario.md",
+        request_with_scheme("https", root_path="/generator"),
+    ).body.decode()
+
+    assert 'content="/generator"' in index
+    assert 'src="/generator/assets/scenario-state.js"' in index
+    assert 'href="/generator/docs/README.md"' in index
+    assert "href='/generator/assets/style.css'" in documentation
+    assert "src='/generator/branding/logo.svg'" in documentation
+    assert 'href="/generator/docs/download/karl-controller-template.json"' in documentation
+    assert "fetch('/generator/api/session'" in documentation
 
 
 def test_web_serves_about_content():
@@ -721,7 +790,7 @@ def test_web_serves_about_content():
 
 def test_web_rejects_documentation_paths_outside_docs():
     with pytest.raises(HTTPException, match="Documentation page not found"):
-        web_server.documentation_page("../README.md")
+        web_server.documentation_page("../README.md", request_with_scheme("http"))
 
 
 def test_web_waypoint_time_edit_matches_desktop_propagation():
