@@ -19,6 +19,8 @@
   the corresponding points table.
 - Use the mouse wheel or the canvas `+` and `-` keyboard commands to zoom. Use
   Alt plus an arrow key to pan. **Fit view** or the `F` key resets the viewport.
+- On a touchscreen, drag empty canvas space to pan. Use a two-finger pinch to
+  pan and zoom while keeping the point between both fingers in place.
 - Actor names, point times, and speeds can be edited in their labelled form and
   table fields. Pointer users can also double-click their canvas labels.
 - Distance and radius measurements accept canvas positions selected with either
