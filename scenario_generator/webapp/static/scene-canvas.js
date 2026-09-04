@@ -767,39 +767,146 @@ function circleFromPoints(first, second, third) {
   return { center: [xM, yM], radius: Math.hypot(first[0] - xM, first[1] - yM) };
 }
 
+const activeTouchPointers = new Map();
+let touchGesture = null;
+
+/** Ignore the compatibility click emitted immediately after a completed gesture. */
+function suppressNextCanvasClick() {
+  state.suppressCanvasClick = true;
+  setTimeout(() => { state.suppressCanvasClick = false; }, 0);
+}
+
+/** Return the current camera without changing an automatically fitted view. */
+function currentCamera() {
+  return state.camera || { minX: state.view.minX, minY: state.view.minY, scale: state.view.scale };
+}
+
+/** Restore a locally dragged point when a second finger turns the drag into a gesture. */
+function restoreDragPreview() {
+  const target = state.dragTarget;
+  if (!target?.originalPoint) return;
+  if (target.kind === "road") target.road.points[target.pointIndex] = [...target.originalPoint];
+  else {
+    const point = target.actor.waypoints[target.index];
+    [point.x_m, point.y_m] = target.originalPoint;
+  }
+}
+
+/** Anchor a two-finger gesture in world space so pinching also supports panning. */
+function beginTouchGesture(canvas) {
+  const pointers = [...activeTouchPointers.values()].slice(0, 2);
+  if (pointers.length < 2) return;
+  restoreDragPreview();
+  state.dragTarget = null;
+  state.panStart = null;
+  const rect = canvas.getBoundingClientRect();
+  const camera = currentCamera();
+  const centerX = (pointers[0].x + pointers[1].x) / 2 - rect.left;
+  const centerY = (pointers[0].y + pointers[1].y) / 2 - rect.top;
+  touchGesture = {
+    pointerIds: pointers.map((pointer) => pointer.id),
+    startDistance: Math.max(Math.hypot(pointers[1].x - pointers[0].x, pointers[1].y - pointers[0].y), 1),
+    startScale: camera.scale,
+    worldX: camera.minX + centerX / camera.scale,
+    worldY: camera.minY + rect.height / camera.scale - centerY / camera.scale,
+  };
+  state.didDrag = true;
+  draw();
+}
+
+/** Apply the translation and scale represented by the two active touch pointers. */
+function updateTouchGesture(canvas) {
+  if (!touchGesture) return;
+  const pointers = touchGesture.pointerIds.map((pointerId) => activeTouchPointers.get(pointerId));
+  if (pointers.some((pointer) => !pointer)) return;
+  const rect = canvas.getBoundingClientRect();
+  const centerX = (pointers[0].x + pointers[1].x) / 2 - rect.left;
+  const centerY = (pointers[0].y + pointers[1].y) / 2 - rect.top;
+  const distance = Math.hypot(pointers[1].x - pointers[0].x, pointers[1].y - pointers[0].y);
+  const scale = Math.min(500, Math.max(0.1, touchGesture.startScale * distance / touchGesture.startDistance));
+  state.camera = {
+    scale,
+    minX: touchGesture.worldX - centerX / scale,
+    minY: touchGesture.worldY - rect.height / scale + centerY / scale,
+  };
+  draw();
+}
+
+/** Continue panning with the remaining finger after a pinch ends. */
+function continueTouchPan() {
+  const [pointer] = activeTouchPointers.values();
+  if (!pointer) {
+    state.panStart = null;
+    return;
+  }
+  state.panStart = { pointerId: pointer.id, x: pointer.x, y: pointer.y, camera: currentCamera(), touch: true, moved: true };
+}
+
 // Pointer gestures keep previews local and persist geometry only when released.
 $("#map-canvas").onpointerdown = (event) => {
   if (state.keyboardCursorVisible) {
     state.keyboardCursorVisible = false;
     draw();
   }
-  if (event.button === 2) {
-    state.panStart = { x: event.clientX, y: event.clientY, camera: state.camera || { minX: state.view.minX, minY: state.view.minY, scale: state.view.scale } };
+  if (event.pointerType === "touch") {
+    activeTouchPointers.set(event.pointerId, { id: event.pointerId, x: event.clientX, y: event.clientY });
+    event.currentTarget.setPointerCapture(event.pointerId);
+    if (activeTouchPointers.size >= 2) {
+      beginTouchGesture(event.currentTarget);
+      event.preventDefault();
+      return;
+    }
+  }
+  if (event.button === 1 || event.button === 2) {
+    state.panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: currentCamera(), touch: false, moved: false };
     event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault(); return;
   }
-  if (state.measurementMode !== "off") return;
+  if (state.measurementMode !== "off") {
+    if (event.pointerType === "touch") state.panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: currentCamera(), touch: true, moved: false };
+    return;
+  }
   const [xM, yM] = canvasWorldPoint(event);
   // A time label may overlap its handle. The handle must still be draggable;
   // labels remain editable when clicked away from the handle itself.
   const trajectoryTarget = state.scenario.settings.map_mode ? null : nearestWaypoint(xM, yM);
-  if (!trajectoryTarget && canvasLabelTarget(event)) return;
+  if (!trajectoryTarget && canvasLabelTarget(event)) {
+    if (event.pointerType === "touch") state.panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: currentCamera(), touch: true, moved: false };
+    return;
+  }
   if (state.scenario.settings.map_mode) {
     const target = nearestRoadPoint(xM, yM);
-    if (!target) return;
-    state.dragTarget = { ...target, kind: "road", startClientX: event.clientX, startClientY: event.clientY }; state.didDrag = false;
+    if (!target) {
+      if (event.pointerType === "touch") state.panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: currentCamera(), touch: true, moved: false };
+      return;
+    }
+    state.dragTarget = { ...target, kind: "road", pointerId: event.pointerId, originalPoint: [...target.road.points[target.pointIndex]], startClientX: event.clientX, startClientY: event.clientY }; state.didDrag = false;
     event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault(); return;
   }
   const target = trajectoryTarget;
-  if (!target) return;
-  state.dragTarget = { ...target, kind: "actor", startClientX: event.clientX, startClientY: event.clientY }; state.selected = target.actor.name; state.didDrag = false;
+  if (!target) {
+    if (event.pointerType === "touch") state.panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: currentCamera(), touch: true, moved: false };
+    return;
+  }
+  const point = target.actor.waypoints[target.index];
+  state.dragTarget = { ...target, kind: "actor", pointerId: event.pointerId, originalPoint: [point.x_m, point.y_m], startClientX: event.clientX, startClientY: event.clientY }; state.selected = target.actor.name; state.didDrag = false;
   event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault();
 };
 
 $("#map-canvas").onpointermove = (event) => {
-  if (state.panStart) {
-    const start = state.panStart; state.camera = { minX: start.camera.minX - (event.clientX - start.x) / start.camera.scale, minY: start.camera.minY + (event.clientY - start.y) / start.camera.scale, scale: start.camera.scale }; draw(); return;
+  if (event.pointerType === "touch" && activeTouchPointers.has(event.pointerId)) {
+    activeTouchPointers.set(event.pointerId, { id: event.pointerId, x: event.clientX, y: event.clientY });
+    if (touchGesture) { updateTouchGesture(event.currentTarget); event.preventDefault(); return; }
   }
-  if (!state.dragTarget) return;
+  if (state.panStart) {
+    const start = state.panStart;
+    if (start.pointerId !== event.pointerId) return;
+    if (start.touch && !start.moved && Math.hypot(event.clientX - start.x, event.clientY - start.y) < 5) return;
+    start.moved = true;
+    state.didDrag = true;
+    state.camera = { minX: start.camera.minX - (event.clientX - start.x) / start.camera.scale, minY: start.camera.minY + (event.clientY - start.y) / start.camera.scale, scale: start.camera.scale };
+    draw(); event.preventDefault(); return;
+  }
+  if (!state.dragTarget || state.dragTarget.pointerId !== event.pointerId) return;
   if (!state.didDrag && Math.hypot(event.clientX - state.dragTarget.startClientX, event.clientY - state.dragTarget.startClientY) < 5) return;
   const [xM, yM] = canvasWorldPoint(event);
   if (state.dragTarget.kind === "road") state.dragTarget.road.points[state.dragTarget.pointIndex] = [xM, yM];
@@ -808,7 +915,28 @@ $("#map-canvas").onpointermove = (event) => {
 };
 
 $("#map-canvas").onpointerup = async (event) => {
-  if (state.panStart) { state.panStart = null; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); return; }
+  if (event.pointerType === "touch") {
+    activeTouchPointers.delete(event.pointerId);
+    if (touchGesture) {
+      const endedGesturePointer = touchGesture.pointerIds.includes(event.pointerId);
+      if (endedGesturePointer) {
+        touchGesture = null;
+        if (activeTouchPointers.size >= 2) beginTouchGesture(event.currentTarget);
+        else continueTouchPan();
+        suppressNextCanvasClick();
+      }
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+      return;
+    }
+  }
+  if (state.panStart?.pointerId === event.pointerId) {
+    const moved = state.panStart.moved;
+    state.panStart = null;
+    state.didDrag = false;
+    if (moved && event.pointerType === "touch") suppressNextCanvasClick();
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    return;
+  }
   const target = state.dragTarget; if (!target) return;
   state.dragTarget = null;
   if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
@@ -827,9 +955,13 @@ $("#map-canvas").onpointerup = async (event) => {
 };
 
 $("#map-canvas").onpointercancel = (event) => {
+  activeTouchPointers.delete(event.pointerId);
+  restoreDragPreview();
   state.dragTarget = null;
   state.panStart = null;
+  touchGesture = null;
   state.didDrag = false;
+  draw();
   if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
 };
 
