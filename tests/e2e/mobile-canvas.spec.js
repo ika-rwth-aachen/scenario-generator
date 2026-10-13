@@ -20,13 +20,16 @@ test("touch gestures pan and pinch-zoom the canvas without adding points", async
   const initialPointCount = await page.locator("#waypoint-body tr").count();
   const session = await page.context().newCDPSession(page);
 
+  const initialView = await page.evaluate(() => ({ ...state.view }));
+
   const start = { id: 0, x: bounds.x + bounds.width - 30, y: bounds.y + 30 };
   await dispatchTouch(session, "touchStart", [start]);
   await dispatchTouch(session, "touchMove", [{ ...start, x: start.x - 45, y: start.y + 20 }]);
   await dispatchTouch(session, "touchEnd", []);
 
+  await page.waitForFunction((view) => state.camera && (state.camera.minX !== view.minX || state.camera.minY !== view.minY), initialView);
   const pannedCamera = await page.evaluate(() => ({ ...state.camera }));
-  expect(pannedCamera.scale).toBeGreaterThan(0);
+  expect(pannedCamera.minX).not.toBe(initialView.minX);
   await expect(page.locator("#waypoint-body tr")).toHaveCount(initialPointCount);
 
   const first = { id: 0, x: bounds.x + bounds.width * 0.35, y: bounds.y + bounds.height * 0.35 };
