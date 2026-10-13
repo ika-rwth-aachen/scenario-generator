@@ -7,6 +7,9 @@ from contextlib import asynccontextmanager, contextmanager, suppress
 from copy import deepcopy
 from contextvars import ContextVar
 from html import escape
+from functools import lru_cache
+from hashlib import sha256
+from urllib.parse import quote
 import math
 import itertools
 import importlib.util
@@ -22,9 +25,11 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from markdown_it import MarkdownIt
+from starlette._utils import get_route_path
+from starlette.responses import Response
 
 from scenario_generator.io.importer_exporter.openscenario import write_openscenario
 from scenario_generator.io.import_validation import (
@@ -110,6 +115,15 @@ def application_url(path: str, base_path: str = BASE_PATH) -> str:
     return f"{base_path}{normalized_path}"
 
 
+def request_base_path(request: Request) -> str:
+    """Use the ASGI deployment prefix without applying environment validation."""
+    if not hasattr(request.state, "application_base_path"):
+        request.state.application_base_path = quote(
+            str(request.scope.get("root_path", "")).rstrip("/"), safe="/~:@%"
+        )
+    return request.state.application_base_path
+
+
 def positive_environment_integer(name: str, default: int) -> int:
     """Read a positive integer setting while retaining a safe default."""
     try:
@@ -121,11 +135,9 @@ def positive_environment_integer(name: str, default: int) -> int:
 
 def session_cookie_path(request: Request | None = None) -> str:
     """Return a safe cookie path for standalone or reverse-proxy deployments."""
-    request_base_path = ""
-    if request is not None:
-        request_base_path = normalize_base_path(str(request.scope.get("root_path", "")))
+    base_path = request_base_path(request) if request is not None else BASE_PATH
     configured = os.getenv("SCENARIO_GENERATOR_SESSION_COOKIE_PATH", "").strip()
-    configured = configured or request_base_path or BASE_PATH or "/"
+    configured = configured or base_path or "/"
     if (
         not configured.startswith("/")
         or any(character in configured for character in ";\r\n\t ?#")
@@ -1547,7 +1559,17 @@ def remove_quality_checker_temporary_copy(input_path: Path):
 @app.middleware("http")
 async def bind_scenario_session(request: Request, call_next: Any) -> Any:
     """Bind each request to a cookie-scoped scenario and serialize its access."""
-    cookie_session_id = request.cookies.get(SESSION_COOKIE_NAME)
+    # Capture the application prefix before nested static mounts mutate scope.
+    cookie_path = session_cookie_path(request)
+    # Browsers send the most specific path first. Starlette's cookie mapping
+    # keeps the last duplicate, which would prefer the legacy Path=/ cookie.
+    cookie_session_id = next(
+        (value.strip() for header in request.headers.getlist("cookie")
+         for part in header.split(";")
+         for name, separator, value in [part.strip().partition("=")]
+         if separator and name == SESSION_COOKIE_NAME and valid_session_id(value.strip())),
+        None,
+    )
     new_session = not valid_session_id(cookie_session_id)
     session_id = cookie_session_id
     if new_session:
@@ -1563,26 +1585,27 @@ async def bind_scenario_session(request: Request, call_next: Any) -> Any:
             scenario_store.touch(session_id)
             active_session_id.reset(session_token)
             active_scenario.reset(scenario_token)
-    if new_session:
+    # Cookie headers contain no path metadata: renew prefixed cookies to migrate
+    # existing sessions, but never recreate a cookie after deleting the session.
+    if not getattr(request.state, "session_deleted", False) and (new_session or cookie_path != "/"):
         response.set_cookie(
             SESSION_COOKIE_NAME,
             session_id,
             httponly=True,
             samesite="lax",
             secure=secure_cookie_for_request(request),
-            path=session_cookie_path(request),
+            path=cookie_path,
         )
+        expire_legacy_session_cookie(response, request)
     return response
 
 
 @app.middleware("http")
 async def reject_oversized_upload_request(request: Request, call_next: Any) -> Any:
     """Reject known oversized multipart bodies before FastAPI parses them."""
-    root_path = normalize_base_path(str(request.scope.get("root_path", "")))
-    application_path = (
-        request.url.path.removeprefix(root_path) if root_path else request.url.path
-    )
-    if application_path in {"/api/import", "/api/map"}:
+    # Check the router-relative path and the raw path: older stripping proxies
+    # may send an already relative path that happens to start with root_path.
+    if {get_route_path(request.scope), request.scope["path"]} & {"/api/import", "/api/map"}:
         content_length = request.headers.get("content-length")
         if content_length:
             try:
@@ -1612,18 +1635,29 @@ def apply_imported_scenario(
         scenario.add_actor()
 
 
+@lru_cache(maxsize=32)
 def render_index(base_path: str = BASE_PATH) -> str:
     """Render the application shell with deployment-prefixed URLs."""
     return (STATIC_DIRECTORY / "index.html").read_text(encoding="utf-8").replace(
         BASE_PATH_PLACEHOLDER,
-        base_path,
+        escape(base_path, quote=True),
     )
 
 
+@lru_cache(maxsize=32)
+def index_etag(base_path: str) -> str:
+    return '"' + sha256(render_index(base_path).encode()).hexdigest() + '"'
+
+
 @app.get("/")
-def index(request: Request) -> HTMLResponse:
-    request_base_path = normalize_base_path(str(request.scope.get("root_path", "")))
-    return HTMLResponse(render_index(request_base_path))
+def index(request: Request) -> Response:
+    base_path = request_base_path(request)
+    etag = index_etag(base_path)
+    headers = {"ETag": etag, "Cache-Control": "private, no-cache"}
+    candidates = request.headers.get("if-none-match", "").split(",")
+    if any(candidate.strip().removeprefix("W/") in {etag, "*"} for candidate in candidates):
+        return Response(status_code=304, headers=headers)
+    return HTMLResponse(render_index(base_path), headers=headers)
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -1637,6 +1671,15 @@ def get_scenario() -> dict[str, object]:
     return scenario.snapshot()
 
 
+def expire_legacy_session_cookie(response: Response, request: Request) -> None:
+    """Remove the root-scoped cookie left by deployments before prefix support."""
+    if session_cookie_path(request) != "/":
+        response.delete_cookie(
+            SESSION_COOKIE_NAME, path="/", secure=secure_cookie_for_request(request),
+            httponly=True, samesite="lax",
+        )
+
+
 @app.delete("/api/session")
 def delete_session_data(request: Request) -> JSONResponse:
     """Delete all application data associated with the active browser session."""
@@ -1645,6 +1688,7 @@ def delete_session_data(request: Request) -> JSONResponse:
         raise HTTPException(status_code=400, detail="No valid session is active")
     assert session_id is not None
     scenario_store.delete(session_id)
+    request.state.session_deleted = True
     response = JSONResponse({"deleted": True})
     response.delete_cookie(
         SESSION_COOKIE_NAME,
@@ -1653,6 +1697,7 @@ def delete_session_data(request: Request) -> JSONResponse:
         httponly=True,
         samesite="lax",
     )
+    expire_legacy_session_cookie(response, request)
     return response
 
 
@@ -1694,14 +1739,21 @@ def documentation_page(document_name: str, request: Request):
     if not document_path.is_file():
         raise HTTPException(status_code=404, detail="Documentation page not found")
     document_source = document_path.read_text(encoding="utf-8")
-    rendered = MarkdownIt("commonmark", {"html": False}).enable("table").render(
-        document_source
-    )
-    base_path = normalize_base_path(str(request.scope.get("root_path", "")))
-    rendered = rendered.replace(
-        'href="/docs/',
-        f'href="{application_url("/docs/", base_path)}',
-    )
+    base_path = request_base_path(request)
+    markdown = MarkdownIt("commonmark", {"html": False}).enable("table")
+    tokens = markdown.parse(document_source)
+
+    def prefix_links(tokens):
+        for token in tokens:
+            for attribute in ("href", "src"):
+                url = token.attrGet(attribute)
+                if url and url.startswith("/") and not url.startswith("//"):
+                    token.attrSet(attribute, application_url(url, base_path))
+            if token.children:
+                prefix_links(token.children)
+
+    prefix_links(tokens)
+    rendered = markdown.renderer.render(tokens, markdown.options, {})
     first_heading = next(
         (line.removeprefix("# ").strip() for line in document_source.splitlines() if line.startswith("# ")),
         document_name.removesuffix(".md").replace("-", " ").title(),
@@ -2932,7 +2984,26 @@ def application_with_base_path(
         redoc_url=None,
         openapi_url=None,
     )
+    @parent_application.get(normalized_base_path, include_in_schema=False)
+    def prefix_index(request: Request) -> RedirectResponse:
+        target = application_url(normalized_base_path + "/", request_base_path(request))
+        if request.url.query:
+            target += "?" + request.url.query
+        return RedirectResponse(target)
+
     parent_application.mount(normalized_base_path, route_application)
+
+    async def stripped_proxy_application(scope, receive, send):
+        # Preserve the external prefix for generated URLs and cookie paths even
+        # when a proxy forwards only the application-relative path.
+        scope = dict(scope)
+        root_path = scope.get("root_path", "").rstrip("/")
+        relative_path = get_route_path(scope)
+        scope["root_path"] = root_path + normalized_base_path
+        scope["path"] = scope["root_path"] + relative_path
+        await route_application(scope, receive, send)
+
+    parent_application.mount("/", stripped_proxy_application)
     return parent_application
 
 

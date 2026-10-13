@@ -4,9 +4,11 @@ const { defineConfig } = require("@playwright/test");
 const projectRoot = path.resolve(__dirname, "../..");
 const defaultServerCommand = "python -m scenario_generator.webapp.server";
 const configuredBasePath = process.env.SCENARIO_GENERATOR_BASE_PATH || "";
-const configuredBaseURL = process.env.PLAYWRIGHT_BASE_URL
-  || `http://localhost:8000${configuredBasePath}`;
-const applicationBaseURL = new URL(`${configuredBaseURL.replace(/\/$/, "")}/`);
+const applicationBaseURL = new URL(process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:8000");
+if (applicationBaseURL.pathname === "/" && configuredBasePath) {
+  applicationBaseURL.pathname = configuredBasePath;
+}
+applicationBaseURL.pathname = `${applicationBaseURL.pathname.replace(/\/+$/, "")}/`;
 
 module.exports = defineConfig({
   testDir: __dirname,

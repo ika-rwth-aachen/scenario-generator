@@ -1142,3 +1142,131 @@ def test_web_tutorial_intersection_conflict_car_and_cyclist():
     assert scenario.vehicles["cyclist"][1].time_s == 6.0
     assert scenario.vehicles["cyclist"][2].time_s == 8.0
     assert scenario.vehicles["cyclist"][0].time_s == pytest.approx(4.5)
+
+
+def asgi_response(app, path, *, method="GET", headers=(), root_path=""):
+    """Exercise routing and middleware without a network server."""
+    async def run():
+        request = request_with_scheme("https", root_path)
+        scope = dict(request.scope, path=path, raw_path=path.encode(), method=method,
+                     headers=list(headers), asgi={"version": "3.0", "spec_version": "2.4"})
+        messages = []
+        received = False
+
+        async def receive():
+            nonlocal received
+            if not received:
+                received = True
+                return {"type": "http.request", "body": b"", "more_body": False}
+            await asyncio.Event().wait()
+
+        async def send(message):
+            messages.append(message)
+
+        await asyncio.wait_for(app(scope, receive, send), timeout=5)
+        start = next(message for message in messages if message["type"] == "http.response.start")
+        body = b"".join(message.get("body", b"") for message in messages)
+        return start["status"], start["headers"], body
+
+    return asyncio.run(run())
+
+
+def session_headers(headers):
+    return [value.decode() for name, value in headers if name == b"set-cookie"]
+
+
+def test_web_migrates_legacy_cookie_and_deletes_both_paths(tmp_path, monkeypatch):
+    monkeypatch.delenv("SCENARIO_GENERATOR_SESSION_COOKIE_PATH", raising=False)
+    store = web_server.ScenarioStore(tmp_path)
+    monkeypatch.setattr(web_server, "scenario_store", store)
+    app = web_server.application_with_base_path(web_server.route_app, "/generator")
+    session_id = "a" * 32
+    cookie = [(b"cookie", f"{web_server.SESSION_COOKIE_NAME}={session_id}".encode())]
+    status, headers, _ = asgi_response(app, "/generator/api/scenario", headers=cookie)
+    assert status == 200
+    cookies = session_headers(headers)
+    assert any(f"={session_id};" in value and "Path=/generator" in value for value in cookies)
+    assert any("Max-Age=0" in value and "Path=/;" in value for value in cookies)
+    status, headers, body = asgi_response(app, "/generator/api/session", method="DELETE", headers=cookie)
+    assert status == 200
+    assert json.loads(body) == {"deleted": True}
+    cookies = session_headers(headers)
+    assert len(cookies) == 2
+    assert all("Max-Age=0" in value for value in cookies)
+    assert any("Path=/generator" in value for value in cookies)
+    assert any("Path=/;" in value for value in cookies)
+    assert session_id not in store.sessions
+    # After applying both expirations the browser sends no session cookie.
+    _, headers, _ = asgi_response(app, "/generator/api/scenario")
+    assert any("Max-Age=0" not in value and session_id not in value for value in session_headers(headers))
+
+
+def test_web_prefers_specific_cookie_and_does_not_reissue_deleted_session(tmp_path, monkeypatch):
+    monkeypatch.delenv("SCENARIO_GENERATOR_SESSION_COOKIE_PATH", raising=False)
+    store = web_server.ScenarioStore(tmp_path)
+    monkeypatch.setattr(web_server, "scenario_store", store)
+    name = web_server.SESSION_COOKIE_NAME
+    specific, legacy = "b" * 32, "c" * 32
+    app = web_server.application_with_base_path(web_server.route_app, "/generator")
+    cookie = [(b"cookie", f"{name}={specific}; {name}={legacy}".encode())]
+    asgi_response(app, "/generator/api/scenario", headers=cookie)
+    assert specific in store.sessions
+    assert legacy not in store.sessions
+    _, headers, _ = asgi_response(app, "/generator/api/session", method="DELETE")
+    assert all("Max-Age=0" in value for value in session_headers(headers))
+
+
+@pytest.mark.parametrize("path", ["/", "/favicon.ico", "/api/scenario", "/generator/", "/generator/api/scenario"])
+def test_web_prefix_and_stripping_proxy_routes(path):
+    app = web_server.application_with_base_path(web_server.route_app, "/generator")
+    status, _, body = asgi_response(app, path)
+    assert status == 200
+    if path.endswith("/"):
+        assert b'content="/generator"' in body
+
+
+def test_web_asgi_prefix_accepts_mount_characters_and_caches_index():
+    status, headers, body = asgi_response(web_server.route_app, "/tools/@team/", root_path="/tools/@team")
+    assert status == 200
+    assert b'content="/tools/@team"' in body
+    etag = next(value for name, value in headers if name == b"etag")
+    status, _, body = asgi_response(web_server.route_app, "/tools/@team/", root_path="/tools/@team", headers=[(b"if-none-match", etag)])
+    assert status == 304
+    assert body == b""
+
+
+@pytest.mark.parametrize("root_path,path", [("", "/api/import"), ("/api", "/api/import"), ("/api", "/api/api/import"), ("/tools/@team", "/tools/@team/api/map")])
+def test_web_upload_guard_rejects_prefixed_and_stripped_requests(root_path, path):
+    status, _, _ = asgi_response(web_server.route_app, path, method="POST", root_path=root_path,
+                               headers=[(b"content-length", str(web_server.MAX_UPLOAD_BYTES + web_server.UPLOAD_CHUNK_BYTES + 1).encode())])
+    assert status == 413
+
+
+def test_web_documentation_prefixes_links_and_images(tmp_path, monkeypatch):
+    (tmp_path / "test.md").write_text('[Home](/) [Asset](/assets/file) ![Image](/docs/image.png) [External](https://example.com/) [CDN](//example.com/a) [Relative](next.md)')
+    monkeypatch.setattr(web_server, "DOCUMENTATION_DIRECTORY", tmp_path)
+    html = web_server.documentation_page("test.md", request_with_scheme("https", "/tools/@team")).body.decode()
+    assert 'href="/tools/@team/"' in html
+    assert 'href="/tools/@team/assets/file"' in html
+    assert 'src="/tools/@team/docs/image.png"' in html
+    assert 'href="https://example.com/"' in html
+    assert 'href="//example.com/a"' in html
+    assert 'href="next.md"' in html
+
+
+def test_web_redirects_bare_prefix_to_index():
+    app = web_server.application_with_base_path(web_server.route_app, "/generator")
+    status, headers, _ = asgi_response(app, "/generator")
+    assert status == 307
+    assert (b"location", b"/generator/") in headers
+
+
+@pytest.mark.parametrize("path", ["/generator/assets/style.css", "/generator/branding/logo.svg"])
+def test_web_static_mounts_keep_application_cookie_path(path, monkeypatch):
+    monkeypatch.delenv("SCENARIO_GENERATOR_SESSION_COOKIE_PATH", raising=False)
+    app = web_server.application_with_base_path(web_server.route_app, "/generator")
+    status, headers, _ = asgi_response(app, path)
+    assert status == 200
+    cookies = session_headers(headers)
+    assert any("Path=/generator;" in value for value in cookies)
+    assert not any("Path=/generator/assets" in value or "Path=/generator/branding" in value for value in cookies)
