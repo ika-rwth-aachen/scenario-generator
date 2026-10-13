@@ -126,7 +126,7 @@ jobs:
           npm --prefix tests/e2e exec -- playwright install --with-deps chromium
       - name: Run Playwright e2e
         env:
-          PLAYWRIGHT_WEB_SERVER_COMMAND: ".venv/bin/python -m scenario_generator.webapp.server"
+          PLAYWRIGHT_PYTHON: ".venv/bin/python"
         run: |
           cd tests/e2e && npm run test:e2e
       - name: Upload e2e artifacts

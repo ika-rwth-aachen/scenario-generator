@@ -550,7 +550,7 @@ function ensureKeyboardCursor() {
 function scrollKeyboardCursorIntoView() {
   if (!state.keyboardCursor || !state.view) return;
   const rect = $("#map-canvas").getBoundingClientRect();
-  const current = state.camera || { minX: state.view.minX, minY: state.view.minY, scale: state.view.scale };
+  const current = currentCamera();
   const marginM = 20 / current.scale;
   const widthM = rect.width / current.scale;
   const heightM = rect.height / current.scale;
@@ -564,11 +564,7 @@ function scrollKeyboardCursorIntoView() {
 /** Zoom around the visible centre, matching the pointer wheel's bounded scale. */
 function keyboardZoom(factor) {
   const rect = $("#map-canvas").getBoundingClientRect();
-  const current = state.camera || {
-    minX: state.view.minX,
-    minY: state.view.minY,
-    scale: state.view.scale,
-  };
+  const current = currentCamera();
   const centerX = current.minX + rect.width / current.scale / 2;
   const centerY = current.minY + rect.height / current.scale / 2;
   const scale = Math.min(500, Math.max(0.1, current.scale * factor));
@@ -601,7 +597,7 @@ mapCanvas.addEventListener("keydown", async (event) => {
     const pixelStep = event.shiftKey ? 50 : 10;
     const stepM = pixelStep / (state.camera?.scale || state.view.scale);
     if (event.altKey) {
-      const current = state.camera || { minX: state.view.minX, minY: state.view.minY, scale: state.view.scale };
+      const current = currentCamera();
       state.camera = { ...current, minX: current.minX + direction[0] * stepM, minY: current.minY + direction[1] * stepM };
     } else {
       state.keyboardCursor[0] += direction[0] * stepM;
@@ -832,6 +828,30 @@ function updateTouchGesture(canvas) {
   draw();
 }
 
+/** Start a pan using one pointer and a snapshot of the current camera. */
+function beginPan(pointerId, x, y, touch, moved = false) {
+  state.panStart = { pointerId, x, y, camera: currentCamera(), touch, moved };
+}
+
+function beginPointerPan(event) {
+  beginPan(event.pointerId, event.clientX, event.clientY, event.pointerType === "touch");
+}
+
+/** End only the affected gesture pointer, keeping remaining fingers usable. */
+function endTouchGesturePointer(event) {
+  if (event.pointerType !== "touch") return false;
+  activeTouchPointers.delete(event.pointerId);
+  if (!touchGesture) return false;
+  if (touchGesture.pointerIds.includes(event.pointerId)) {
+    touchGesture = null;
+    if (activeTouchPointers.size >= 2) beginTouchGesture(event.currentTarget);
+    else continueTouchPan();
+    suppressNextCanvasClick();
+  }
+  if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  return true;
+}
+
 /** Continue panning with the remaining finger after a pinch ends. */
 function continueTouchPan() {
   const [pointer] = activeTouchPointers.values();
@@ -839,7 +859,7 @@ function continueTouchPan() {
     state.panStart = null;
     return;
   }
-  state.panStart = { pointerId: pointer.id, x: pointer.x, y: pointer.y, camera: currentCamera(), touch: true, moved: true };
+  beginPan(pointer.id, pointer.x, pointer.y, true, true);
 }
 
 // Pointer gestures keep previews local and persist geometry only when released.
@@ -858,11 +878,11 @@ $("#map-canvas").onpointerdown = (event) => {
     }
   }
   if (event.button === 1 || event.button === 2) {
-    state.panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: currentCamera(), touch: false, moved: false };
+    beginPointerPan(event);
     event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault(); return;
   }
   if (state.measurementMode !== "off") {
-    if (event.pointerType === "touch") state.panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: currentCamera(), touch: true, moved: false };
+    if (event.pointerType === "touch") beginPointerPan(event);
     return;
   }
   const [xM, yM] = canvasWorldPoint(event);
@@ -870,13 +890,13 @@ $("#map-canvas").onpointerdown = (event) => {
   // labels remain editable when clicked away from the handle itself.
   const trajectoryTarget = state.scenario.settings.map_mode ? null : nearestWaypoint(xM, yM);
   if (!trajectoryTarget && canvasLabelTarget(event)) {
-    if (event.pointerType === "touch") state.panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: currentCamera(), touch: true, moved: false };
+    if (event.pointerType === "touch") beginPointerPan(event);
     return;
   }
   if (state.scenario.settings.map_mode) {
     const target = nearestRoadPoint(xM, yM);
     if (!target) {
-      if (event.pointerType === "touch") state.panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: currentCamera(), touch: true, moved: false };
+      if (event.pointerType === "touch") beginPointerPan(event);
       return;
     }
     state.dragTarget = { ...target, kind: "road", pointerId: event.pointerId, originalPoint: [...target.road.points[target.pointIndex]], startClientX: event.clientX, startClientY: event.clientY }; state.didDrag = false;
@@ -884,7 +904,7 @@ $("#map-canvas").onpointerdown = (event) => {
   }
   const target = trajectoryTarget;
   if (!target) {
-    if (event.pointerType === "touch") state.panStart = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, camera: currentCamera(), touch: true, moved: false };
+    if (event.pointerType === "touch") beginPointerPan(event);
     return;
   }
   const point = target.actor.waypoints[target.index];
@@ -915,20 +935,7 @@ $("#map-canvas").onpointermove = (event) => {
 };
 
 $("#map-canvas").onpointerup = async (event) => {
-  if (event.pointerType === "touch") {
-    activeTouchPointers.delete(event.pointerId);
-    if (touchGesture) {
-      const endedGesturePointer = touchGesture.pointerIds.includes(event.pointerId);
-      if (endedGesturePointer) {
-        touchGesture = null;
-        if (activeTouchPointers.size >= 2) beginTouchGesture(event.currentTarget);
-        else continueTouchPan();
-        suppressNextCanvasClick();
-      }
-      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-      return;
-    }
-  }
+  if (endTouchGesturePointer(event)) return;
   if (state.panStart?.pointerId === event.pointerId) {
     const moved = state.panStart.moved;
     state.panStart = null;
@@ -937,7 +944,7 @@ $("#map-canvas").onpointerup = async (event) => {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     return;
   }
-  const target = state.dragTarget; if (!target) return;
+  const target = state.dragTarget; if (!target || target.pointerId !== event.pointerId) return;
   state.dragTarget = null;
   if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   if (!state.didDrag) { state.suppressCanvasClick = true; return; }
@@ -955,19 +962,28 @@ $("#map-canvas").onpointerup = async (event) => {
 };
 
 $("#map-canvas").onpointercancel = (event) => {
-  activeTouchPointers.delete(event.pointerId);
-  restoreDragPreview();
-  state.dragTarget = null;
-  state.panStart = null;
-  touchGesture = null;
-  state.didDrag = false;
-  draw();
+  if (endTouchGesturePointer(event)) return;
+  let affected = false;
+  if (state.dragTarget?.pointerId === event.pointerId) {
+    restoreDragPreview();
+    state.dragTarget = null;
+    affected = true;
+  }
+  if (state.panStart?.pointerId === event.pointerId) {
+    state.panStart = null;
+    affected = true;
+  }
+  if (affected) {
+    state.didDrag = false;
+    suppressNextCanvasClick();
+    draw();
+  }
   if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
 };
 
 $("#map-canvas").oncontextmenu = (event) => event.preventDefault();
 $("#map-canvas").onwheel = (event) => {
-  event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); const current = state.camera || { minX: state.view.minX, minY: state.view.minY, scale: state.view.scale };
+  event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); const current = currentCamera();
   const factor = event.deltaY < 0 ? 1.15 : 1 / 1.15; const scale = Math.min(500, Math.max(0.1, current.scale * factor));
   const worldX = current.minX + (event.clientX - rect.left) / current.scale; const worldY = current.minY + rect.height / current.scale - (event.clientY - rect.top) / current.scale;
   state.camera = { scale, minX: worldX - (event.clientX - rect.left) / scale, minY: worldY - rect.height / scale + (event.clientY - rect.top) / scale }; draw();

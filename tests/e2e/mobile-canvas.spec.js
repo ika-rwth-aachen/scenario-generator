@@ -83,3 +83,56 @@ test("touch taps add points and dragging a point still edits it", async ({ page 
   ), target)).not.toBe(target.initialX);
   await expect(rows).toHaveCount(initialPointCount + 1);
 });
+
+
+test("canceling one pinch pointer continues panning with the remaining finger", async ({ page }) => {
+  await openScenario(page);
+  const canvas = page.locator("#map-canvas");
+  await canvas.scrollIntoViewIfNeeded();
+  const bounds = await canvas.boundingBox();
+  const session = await page.context().newCDPSession(page);
+  const first = { id: 0, x: bounds.x + bounds.width * 0.3, y: bounds.y + 30 };
+  const second = { id: 1, x: bounds.x + bounds.width * 0.7, y: bounds.y + 30 };
+  await dispatchTouch(session, "touchStart", [first, second]);
+  const camera = await page.evaluate(() => {
+    const canvas = document.querySelector("#map-canvas");
+    const [pointerId] = touchGesture.pointerIds;
+    canvas.dispatchEvent(new PointerEvent("pointercancel", { pointerId, pointerType: "touch" }));
+    if (touchGesture !== null || !state.panStart) throw new Error("Remaining finger did not resume panning");
+    return { ...currentCamera() };
+  });
+  await dispatchTouch(session, "touchMove", [first, { ...second, x: second.x - 25, y: second.y + 20 }]);
+  await expect.poll(() => page.evaluate(() => state.camera?.minX)).not.toBe(camera.minX);
+  await dispatchTouch(session, "touchEnd", []);
+});
+
+test("pointer cancellation only restores the drag owned by that pointer", async ({ page }) => {
+  await openScenario(page);
+  await page.locator("#map-canvas").scrollIntoViewIfNeeded();
+  const target = await page.evaluate(() => {
+    const rect = document.querySelector("#map-canvas").getBoundingClientRect();
+    const actor = state.scenario.actors.find((entry) => entry.name === state.selected);
+    const point = actor.waypoints[1];
+    return { x: rect.left + (point.x_m - state.view.minX) * state.view.scale,
+      y: rect.top + rect.height - (point.y_m - state.view.minY) * state.view.scale };
+  });
+  const session = await page.context().newCDPSession(page);
+  const finger = { id: 0, ...target };
+  await dispatchTouch(session, "touchStart", [finger]);
+  await dispatchTouch(session, "touchMove", [{ ...finger, x: finger.x + 20 }]);
+  const result = await page.evaluate(() => {
+    const canvas = document.querySelector("#map-canvas");
+    const drag = state.dragTarget;
+    if (!drag || !state.didDrag) throw new Error("Expected an active waypoint drag");
+    const point = drag.actor.waypoints[drag.index];
+    const preview = [point.x_m, point.y_m];
+    canvas.dispatchEvent(new PointerEvent("pointercancel", { pointerId: drag.pointerId + 100, pointerType: "touch" }));
+    const unrelatedPreserved = state.dragTarget === drag && point.x_m === preview[0] && point.y_m === preview[1];
+    canvas.dispatchEvent(new PointerEvent("pointercancel", { pointerId: drag.pointerId, pointerType: "touch" }));
+    return { unrelatedPreserved, cleared: state.dragTarget === null, restored: [point.x_m, point.y_m], original: drag.originalPoint };
+  });
+  expect(result.unrelatedPreserved).toBe(true);
+  expect(result.cleared).toBe(true);
+  expect(result.restored).toEqual(result.original);
+  await dispatchTouch(session, "touchEnd", []);
+});

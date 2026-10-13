@@ -50,37 +50,3 @@ test("data privacy dialogs delete the current session from application and docs"
   await openScenario(page);
   await expect(page.locator("#actor-list .actor")).toHaveCount(2);
 });
-
-test("migrates legacy root cookies and prefers the browser's specific cookie", async ({ context, page, baseURL }) => {
-  const url = new URL(baseURL);
-  const cookiePath = url.pathname.replace(/\/$/, "");
-  test.skip(!cookiePath, "Requires a deployment prefix");
-  const name = "scenario_generator_session";
-  const legacy = "a".repeat(32);
-  const specific = "b".repeat(32);
-  const cookie = (value, path) => ({ name, value, path, domain: url.hostname, httpOnly: true, sameSite: "Lax" });
-  await context.addCookies([cookie(legacy, "/")]);
-  await page.goto(baseURL);
-  let cookies = (await context.cookies()).filter((item) => item.name === name);
-  expect(cookies).toHaveLength(1);
-  expect(cookies[0]).toMatchObject({ value: legacy, path: cookiePath });
-
-  await context.addCookies([cookie(specific, cookiePath), cookie(legacy, "/")]);
-  await page.reload();
-  cookies = (await context.cookies()).filter((item) => item.name === name);
-  expect(cookies).toHaveLength(1);
-  expect(cookies[0]).toMatchObject({ value: specific, path: cookiePath });
-
-  await context.addCookies([cookie(legacy, "/")]);
-  const status = await page.evaluate(async () => {
-    const prefix = document.querySelector('meta[name="scenario-generator-base-path"]').content;
-    return (await fetch(`${prefix}/api/session`, { method: "DELETE" })).status;
-  });
-  expect(status).toBe(200);
-  expect((await context.cookies()).filter((item) => item.name === name)).toHaveLength(0);
-  await page.reload();
-  cookies = (await context.cookies()).filter((item) => item.name === name);
-  expect(cookies).toHaveLength(1);
-  expect(cookies[0].value).not.toBe(legacy);
-  expect(cookies[0].value).not.toBe(specific);
-});

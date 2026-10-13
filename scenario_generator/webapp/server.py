@@ -28,7 +28,6 @@ from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from markdown_it import MarkdownIt
-from starlette._utils import get_route_path
 from starlette.responses import Response
 
 from scenario_generator.io.importer_exporter.openscenario import write_openscenario
@@ -122,6 +121,42 @@ def request_base_path(request: Request) -> str:
             str(request.scope.get("root_path", "")).rstrip("/"), safe="/~:@%"
         )
     return request.state.application_base_path
+
+
+def get_route_path(scope: dict[str, Any]) -> str:
+    """Return the ASGI route path, removing only a complete root-path segment."""
+    path = scope["path"]
+    root = scope.get("root_path", "").rstrip("/")
+    if root and (path == root or path.startswith(root + "/")):
+        return path[len(root):]
+    return path
+
+
+def session_cookie_name(request: Request) -> str:
+    """Isolate deployments even when their cookie paths overlap."""
+    base_path = request_base_path(request)
+    if not base_path:
+        return SESSION_COOKIE_NAME
+    return f"{SESSION_COOKIE_NAME}_{sha256(base_path.encode()).hexdigest()[:16]}"
+
+
+def cookie_values(request: Request, name: str) -> list[str]:
+    """Keep browser order (most specific path first) for duplicate cookies."""
+    return [
+        value.strip() for header in request.headers.getlist("cookie")
+        for part in header.split(";")
+        for key, separator, value in [part.strip().partition("=")]
+        if separator and key == name
+    ]
+
+
+def legacy_cookie_migration(request: Request) -> bool:
+    """Legacy cookies have no origin/path metadata, so adoption must be opt-in."""
+    return (
+        bool(request_base_path(request))
+        and os.getenv("SCENARIO_GENERATOR_MIGRATE_LEGACY_COOKIES", "false").lower() == "true"
+        and bool(cookie_values(request, SESSION_COOKIE_NAME))
+    )
 
 
 def positive_environment_integer(name: str, default: int) -> int:
@@ -1559,24 +1594,32 @@ def remove_quality_checker_temporary_copy(input_path: Path):
 @app.middleware("http")
 async def bind_scenario_session(request: Request, call_next: Any) -> Any:
     """Bind each request to a cookie-scoped scenario and serialize its access."""
-    # Capture the application prefix before nested static mounts mutate scope.
+    # Public files do not need a session and must remain cacheable.
+    path = get_route_path(request.scope)
+    static_prefixes = ("/assets", "/branding", "/docs/images", "/docs/templates", "/docs/examples", "/docs/download")
+    if path == "/favicon.ico" or any(path == prefix or path.startswith(prefix + "/") for prefix in static_prefixes):
+        return await call_next(request)
+
     cookie_path = session_cookie_path(request)
-    # Browsers send the most specific path first. Starlette's cookie mapping
-    # keeps the last duplicate, which would prefer the legacy Path=/ cookie.
-    cookie_session_id = next(
-        (value.strip() for header in request.headers.getlist("cookie")
-         for part in header.split(";")
-         for name, separator, value in [part.strip().partition("=")]
-         if separator and name == SESSION_COOKIE_NAME and valid_session_id(value.strip())),
-        None,
-    )
-    new_session = not valid_session_id(cookie_session_id)
-    session_id = cookie_session_id
-    if new_session:
-        session_id = uuid4().hex
+    cookie_name = session_cookie_name(request)
+    values = cookie_values(request, cookie_name)
+    migrating = legacy_cookie_migration(request)
+    if not values and migrating:
+        values = cookie_values(request, SESSION_COOKIE_NAME)
+    cookie_session_id = next((value for value in values if valid_session_id(value)), None)
+    # Never recreate a deleted/expired session under an identifier from a client.
+    scenario_store.cleanup_expired()
+    session = scenario_store.sessions.get(cookie_session_id)
+    new_session = session is None
+    session_id = uuid4().hex if new_session else cookie_session_id
     assert session_id is not None
-    session = scenario_store.get(session_id)
+    if session is None:
+        session = scenario_store.get(session_id)
     async with session.lock:
+        # A queued request may have captured this object before DELETE acquired
+        # the lock. Do not run it against the detached, deleted scenario.
+        if scenario_store.sessions.get(session_id) is not session:
+            return JSONResponse({"detail": "Session expired; reload the application"}, status_code=409)
         scenario_token = active_scenario.set(session.scenario)
         session_token = active_session_id.set(session_id)
         try:
@@ -1585,18 +1628,15 @@ async def bind_scenario_session(request: Request, call_next: Any) -> Any:
             scenario_store.touch(session_id)
             active_session_id.reset(session_token)
             active_scenario.reset(scenario_token)
-    # Cookie headers contain no path metadata: renew prefixed cookies to migrate
-    # existing sessions, but never recreate a cookie after deleting the session.
-    if not getattr(request.state, "session_deleted", False) and (new_session or cookie_path != "/"):
-        response.set_cookie(
-            SESSION_COOKIE_NAME,
-            session_id,
-            httponly=True,
-            samesite="lax",
-            secure=secure_cookie_for_request(request),
-            path=cookie_path,
-        )
-        expire_legacy_session_cookie(response, request)
+        live_session = scenario_store.sessions.get(session_id) is session
+        if live_session and response.status_code != 304:
+            if new_session or (migrating and not cookie_values(request, cookie_name)):
+                response.set_cookie(
+                    cookie_name, session_id, httponly=True, samesite="lax",
+                    secure=secure_cookie_for_request(request), path=cookie_path,
+                )
+            if migrating:
+                expire_legacy_session_cookie(response, request)
     return response
 
 
@@ -1636,28 +1676,32 @@ def apply_imported_scenario(
 
 
 @lru_cache(maxsize=32)
-def render_index(base_path: str = BASE_PATH) -> str:
-    """Render the application shell with deployment-prefixed URLs."""
-    return (STATIC_DIRECTORY / "index.html").read_text(encoding="utf-8").replace(
-        BASE_PATH_PLACEHOLDER,
-        escape(base_path, quote=True),
+def cached_index(path: Path, revision: tuple[int, int, int], base_path: str) -> tuple[str, str]:
+    """Cache the rendered shell and validator until the source file changes."""
+    content = path.read_text(encoding="utf-8").replace(
+        BASE_PATH_PLACEHOLDER, escape(base_path, quote=True),
     )
+    return content, '"' + sha256(content.encode()).hexdigest() + '"'
 
 
-@lru_cache(maxsize=32)
-def index_etag(base_path: str) -> str:
-    return '"' + sha256(render_index(base_path).encode()).hexdigest() + '"'
+def index_content(base_path: str) -> tuple[str, str]:
+    path = STATIC_DIRECTORY / "index.html"
+    stat = path.stat()
+    return cached_index(path, (stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size), base_path)
+
+
+def render_index(base_path: str = BASE_PATH) -> str:
+    return index_content(base_path)[0]
 
 
 @app.get("/")
 def index(request: Request) -> Response:
-    base_path = request_base_path(request)
-    etag = index_etag(base_path)
+    content, etag = index_content(request_base_path(request))
     headers = {"ETag": etag, "Cache-Control": "private, no-cache"}
     candidates = request.headers.get("if-none-match", "").split(",")
     if any(candidate.strip().removeprefix("W/") in {etag, "*"} for candidate in candidates):
         return Response(status_code=304, headers=headers)
-    return HTMLResponse(render_index(base_path), headers=headers)
+    return HTMLResponse(content, headers=headers)
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -1672,12 +1716,13 @@ def get_scenario() -> dict[str, object]:
 
 
 def expire_legacy_session_cookie(response: Response, request: Request) -> None:
-    """Remove the root-scoped cookie left by deployments before prefix support."""
-    if session_cookie_path(request) != "/":
-        response.delete_cookie(
-            SESSION_COOKIE_NAME, path="/", secure=secure_cookie_for_request(request),
-            httponly=True, samesite="lax",
-        )
+    """Expire old cookie names only during an explicitly enabled migration."""
+    if legacy_cookie_migration(request):
+        for path in {"/", session_cookie_path(request)}:
+            response.delete_cookie(
+                SESSION_COOKIE_NAME, path=path, secure=secure_cookie_for_request(request),
+                httponly=True, samesite="lax",
+            )
 
 
 @app.delete("/api/session")
@@ -1688,10 +1733,9 @@ def delete_session_data(request: Request) -> JSONResponse:
         raise HTTPException(status_code=400, detail="No valid session is active")
     assert session_id is not None
     scenario_store.delete(session_id)
-    request.state.session_deleted = True
     response = JSONResponse({"deleted": True})
     response.delete_cookie(
-        SESSION_COOKIE_NAME,
+        session_cookie_name(request),
         path=session_cookie_path(request),
         secure=secure_cookie_for_request(request),
         httponly=True,
@@ -1702,32 +1746,49 @@ def delete_session_data(request: Request) -> JSONResponse:
 
 
 @app.get("/api/help")
-def get_help() -> dict[str, str]:
+def get_help(request: Request) -> dict[str, str]:
     """Return the maintained web application help text for the browser dialog."""
     return {
         "text": HELP_PATH.read_text(encoding="utf-8"),
-        "html": render_markdown(HELP_PATH),
+        "html": render_markdown(HELP_PATH, request_base_path(request)),
     }
 
 
-def render_markdown(path: Path) -> str:
+def render_markdown_source(source: str, base_path: str = "", *, external_links: bool = False) -> str:
+    """Prefix links and images consistently in all packaged Markdown content."""
+    markdown = MarkdownIt("commonmark", {"html": False}).enable("table")
+    tokens = markdown.parse(source)
+
+    def prepare_tokens(tokens):
+        for token in tokens:
+            for attribute in ("href", "src"):
+                url = token.attrGet(attribute)
+                if url and url.startswith("/") and not url.startswith("//"):
+                    token.attrSet(attribute, application_url(url, base_path))
+            if external_links and token.type == "link_open":
+                token.attrSet("target", "_blank")
+                token.attrSet("rel", "noopener noreferrer")
+            if token.children:
+                prepare_tokens(token.children)
+
+    prepare_tokens(tokens)
+    return markdown.renderer.render(tokens, markdown.options, {})
+
+
+def render_markdown(path: Path, base_path: str = "") -> str:
     """Render trusted, packaged Markdown without allowing embedded HTML."""
-    return MarkdownIt("commonmark", {"html": False}).enable("table").render(
-        path.read_text(encoding="utf-8")
-    ).replace(
-        "<a href=", '<a target="_blank" rel="noopener noreferrer" href='
-    )
+    return render_markdown_source(path.read_text(encoding="utf-8"), base_path, external_links=True)
 
 
-def render_about() -> str:
+def render_about(base_path: str = "") -> str:
     """Render the shared About content with safe external-link behavior."""
-    return render_markdown(ABOUT_PATH)
+    return render_markdown(ABOUT_PATH, base_path)
 
 
 @app.get("/api/about")
-def get_about() -> dict[str, str]:
+def get_about(request: Request) -> dict[str, str]:
     """Return the shared information shown in the About dialog."""
-    return {"html": render_about()}
+    return {"html": render_about(request_base_path(request))}
 
 
 @app.get("/docs/{document_name}")
@@ -1740,20 +1801,7 @@ def documentation_page(document_name: str, request: Request):
         raise HTTPException(status_code=404, detail="Documentation page not found")
     document_source = document_path.read_text(encoding="utf-8")
     base_path = request_base_path(request)
-    markdown = MarkdownIt("commonmark", {"html": False}).enable("table")
-    tokens = markdown.parse(document_source)
-
-    def prefix_links(tokens):
-        for token in tokens:
-            for attribute in ("href", "src"):
-                url = token.attrGet(attribute)
-                if url and url.startswith("/") and not url.startswith("//"):
-                    token.attrSet(attribute, application_url(url, base_path))
-            if token.children:
-                prefix_links(token.children)
-
-    prefix_links(tokens)
-    rendered = markdown.renderer.render(tokens, markdown.options, {})
+    rendered = render_markdown_source(document_source, base_path)
     first_heading = next(
         (line.removeprefix("# ").strip() for line in document_source.splitlines() if line.startswith("# ")),
         document_name.removesuffix(".md").replace("-", " ").title(),
@@ -1792,7 +1840,7 @@ def documentation_page(document_name: str, request: Request):
             + navigation_content
             + "</nav>"
         )
-    about_content = render_about()
+    about_content = render_about(base_path)
     return HTMLResponse(
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'>"
@@ -2971,39 +3019,48 @@ def quality_check_pdf(payload: dict[str, Any]) -> FileResponse:
 def application_with_base_path(
     route_application: FastAPI,
     base_path: str,
+    *,
+    proxy_strips_prefix: bool | None = None,
 ) -> FastAPI:
-    """Mount the web application below an optional URL prefix."""
-    normalized_base_path = normalize_base_path(base_path)
-    if not normalized_base_path:
+    """Adapt explicit proxy modes to one canonical ASGI path/root_path pair."""
+    base_path = normalize_base_path(base_path)
+    if not base_path:
         return route_application
+    if proxy_strips_prefix is None:
+        proxy_strips_prefix = os.getenv("SCENARIO_GENERATOR_PROXY_STRIPS_PREFIX", "false").lower() == "true"
     parent_application = FastAPI(
-        title="scenario.generator",
-        version="0.1.0",
-        lifespan=application_lifespan,
-        docs_url=None,
-        redoc_url=None,
-        openapi_url=None,
+        title="scenario.generator", version="0.1.0", lifespan=application_lifespan,
+        docs_url=None, redoc_url=None, openapi_url=None,
     )
-    @parent_application.get(normalized_base_path, include_in_schema=False)
-    def prefix_index(request: Request) -> RedirectResponse:
-        target = application_url(normalized_base_path + "/", request_base_path(request))
-        if request.url.query:
-            target += "?" + request.url.query
-        return RedirectResponse(target)
 
-    parent_application.mount(normalized_base_path, route_application)
-
-    async def stripped_proxy_application(scope, receive, send):
-        # Preserve the external prefix for generated URLs and cookie paths even
-        # when a proxy forwards only the application-relative path.
+    async def dispatch(scope, receive, send):
         scope = dict(scope)
-        root_path = scope.get("root_path", "").rstrip("/")
-        relative_path = get_route_path(scope)
-        scope["root_path"] = root_path + normalized_base_path
-        scope["path"] = scope["root_path"] + relative_path
+        root = scope.get("root_path", "").rstrip("/")
+        path = get_route_path(scope)
+        if root == base_path or root.endswith(base_path):
+            # Uvicorn or a parent mount already supplied the deployment prefix.
+            external_root = root
+        elif proxy_strips_prefix:
+            external_root = root + base_path
+        else:
+            external_root = root + base_path
+            if path.startswith(base_path + "/"):
+                path = path[len(base_path):]
+            else:
+                # Preserve old bookmarks without guessing whether the proxy
+                # stripped an app segment such as /api or /docs.
+                suffix = "/" if path == base_path else path
+                target = quote(external_root + suffix, safe="/~:@%")
+                if scope.get("query_string"):
+                    target += "?" + scope["query_string"].decode("latin-1")
+                await RedirectResponse(target)(scope, receive, send)
+                return
+        scope["root_path"] = external_root
+        scope["path"] = external_root + (path or "/")
+        scope["raw_path"] = quote(scope["path"], safe="/%").encode("ascii")
         await route_application(scope, receive, send)
 
-    parent_application.mount("/", stripped_proxy_application)
+    parent_application.mount("/", dispatch)
     return parent_application
 
 
