@@ -26,7 +26,7 @@ const tooltipSpecs = [
   ["#lane-snap", "For a loaded map, snap new or moved trajectory points to the centreline of a compatible lane. It may also use that lane's speed limit."],
   ["#delete-last-point", "Remove the most recently added trajectory point for the selected actor."],
   ["#clear-actor", "Remove every trajectory point for the selected actor. The actor itself remains available."],
-  ["#map-canvas", "Pointer: select empty space to append a point, drag a point to move it, use the wheel to zoom, and right/middle drag to pan. Keyboard: use arrows for the cursor, Enter to select, plus/minus to zoom, and Alt plus arrows to pan. Exact point values are also available in the tables."],
+  ["#map-canvas", "Pointer: select empty space to append a point, drag a point to move it, use the wheel to zoom, and right/middle drag to pan. Touch: drag empty space to pan and pinch with two fingers to pan and zoom. Keyboard: use arrows for the cursor, Enter to select, plus/minus to zoom, and Alt plus arrows to pan. Exact point values are also available in the tables."],
   ["#fit-view", "Reset the viewport so all currently visible roads and trajectories fit on the canvas."],
   ["#connect-roads", "Connect two lanes by selecting a source lane and then a target lane on the canvas with a pointer or the keyboard cursor."],
   ["#delete-last-road-point", "Remove the final reference-line point from the selected road."],
