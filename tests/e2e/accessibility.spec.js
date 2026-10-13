@@ -160,7 +160,7 @@ test("canvas pointer jitter remains a click while deliberate movement drags", as
 });
 
 test("documentation pages expose a meaningful title and pass automated checks", async ({ page }) => {
-  await page.goto("/docs/01-intersection-conflict.md");
+  await page.goto("docs/01-intersection-conflict.md");
   await expect(page).toHaveTitle(/Create an intersecting conflict.*scenario\.generator/);
   await expectNoAxeViolations(page);
 

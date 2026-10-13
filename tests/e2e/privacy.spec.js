@@ -35,7 +35,7 @@ test("data privacy dialogs delete the current session from application and docs"
 
   await page.locator("#add-actor").click();
   await expect(page.locator("#actor-list .actor")).toHaveCount(3);
-  await page.goto("/docs/README.md");
+  await page.goto("docs/README.md");
   await page.locator("#docs-data-privacy").click();
   await expect(page.locator("#docs-data-privacy-dialog")).toBeVisible();
   await page.mouse.click(1, 1);
