@@ -26,7 +26,9 @@ from scenario_generator.scenario_elements.road_user.road_user import (
     VehicleDimensions,
     safe_vehicle_name,
 )
-from scenario_generator.scenario_elements.road_user.trajectory import Trajectory, Waypoint
+from scenario_generator.scenario_elements.road_user.trajectory import (
+    DEFAULT_TRAJECTORY_INTERPOLATION, Trajectory, Waypoint,
+)
 
 
 def parse_float(value: str, field_name: str) -> float:
@@ -159,6 +161,9 @@ def load_trajectory_json_dimensions(input_path: Path) -> dict[str, VehicleDimens
             continue
         name = safe_vehicle_name(str(raw_name))
         dimensions[name] = VehicleDimensions(
+            interpolation_mode=str(raw_dimensions.get(
+                "interpolation_mode", DEFAULT_TRAJECTORY_INTERPOLATION,
+            )),
             length_m=float(raw_dimensions.get("length_m", 4.5)),
             width_m=float(raw_dimensions.get("width_m", 1.8)),
             height_m=float(raw_dimensions.get("height_m", 1.8)),
@@ -1672,6 +1677,9 @@ def load_scenario_config(
 		if not isinstance(raw_dimensions, dict):
 			raw_dimensions = {}
 		dimensions[name] = VehicleDimensions(
+			interpolation_mode=str(raw_dimensions.get(
+				"interpolation_mode", DEFAULT_TRAJECTORY_INTERPOLATION,
+			)),
 			length_m=float(raw_dimensions.get("length_m", 4.5)),
 			width_m=float(raw_dimensions.get("width_m", 1.8)),
 			height_m=float(raw_dimensions.get("height_m", 1.8)),

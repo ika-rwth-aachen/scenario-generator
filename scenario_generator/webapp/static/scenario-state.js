@@ -15,6 +15,11 @@ function applicationUrl(path) {
 }
 // Keep the palette aligned with the established desktop canvas.
 const actorColors = ["#a64b4b", "#416b94", "#39704a", "#8c5a2b", "#73578c", "#2f6f73"];
+const trajectoryInterpolationLabels = {
+  cubic_hermite: "Cubic Hermite spline",
+  linear_velocity: "Linear velocity",
+  catmull_rom: "Catmull-Rom curve",
+};
 const tooltipSpecs = [
   ["#add-actor", () => state.scenario.settings.map_mode
     ? "Add an empty road to the map, then select canvas positions or use the Road waypoints table to define its reference line."
@@ -23,6 +28,7 @@ const tooltipSpecs = [
   ["#time-step", "Used only by 'New points: fixed time step': each clicked point is initially placed this many seconds after the previous point."],
   ["#trajectory-direction", "Applies when you edit an existing point's time, speed, or position. Forward keeps earlier points fixed and recalculates later ones; backward keeps later points fixed and recalculates earlier ones. It does not change the direction in which newly clicked points are appended."],
   ["#waypoint-timing", "Controls only the timestamp assigned to the next clicked trajectory point. Fixed time step uses the value above. Preserve speed derives the time from the previous segment's average speed, so the difference is visible when successive segment lengths differ."],
+  ["#trajectory-interpolation", "Applies to the selected trajectory and becomes the default for new actors. Cubic Hermite preserves waypoint speeds and matches velocity slopes on both sides of each interior waypoint. Endpoint slopes remain free. Linear velocity uses constant acceleration. Catmull-Rom interpolates speed with time-aware shared tangents and a distance correction. Waypoint times are preserved; linear velocity scales incompatible speed targets to cover the segment distance."],
   ["#lane-snap", "For a loaded map, snap new or moved trajectory points to the centreline of a compatible lane. It may also use that lane's speed limit."],
   ["#delete-last-point", "Remove the most recently added trajectory point for the selected actor."],
   ["#clear-actor", "Remove every trajectory point for the selected actor. The actor itself remains available."],
@@ -477,6 +483,10 @@ function renderPoints() {
       ["time_s", "x_m", "y_m", "speed_mps"]
         .map((key) => `<td><input id="waypoint-${index}-${key}" type="number" step="any" data-key="${key}"></td>`)
         .join("");
+    const pointNumber = document.createElement("th");
+    pointNumber.scope = "row";
+    pointNumber.textContent = String(index + 1);
+    row.insertBefore(pointNumber, row.children[1]);
     const fieldLabels = {
       time_s: "time in seconds",
       x_m: "X coordinate in metres",
@@ -565,48 +575,99 @@ async function deleteWaypoint(index) {
   }
 }
 
-/** Prefer sampled curve distances and fall back to straight control-point segments. */
-function profileDistances(actor) {
-  if (actor.profile_distances_m?.length === actor.waypoints.length) return actor.profile_distances_m;
-  const distances = [0];
-  for (let index = 1; index < actor.waypoints.length; index += 1) {
-    const previous = actor.waypoints[index - 1]; const current = actor.waypoints[index];
-    distances.push(distances.at(-1) + Math.hypot(current.x_m - previous.x_m, current.y_m - previous.y_m));
+/** Canvas playback is linear within each sampled position/time interval. */
+function playbackSpeedSegments(actor) {
+  const curve = actor.curve;
+  const segments = [];
+  for (let index = 1; index < (curve?.time_s.length || 0); index += 1) {
+    const start = curve.time_s[index - 1];
+    const end = curve.time_s[index];
+    if (end <= start) continue;
+    const distance = Math.hypot(curve.x_m[index] - curve.x_m[index - 1], curve.y_m[index] - curve.y_m[index - 1]);
+    segments.push({ start, end, speed: distance / (end - start) });
   }
-  return distances;
+  return segments;
+}
+
+/** Plot the same velocity law that was integrated to generate the trajectory.
+ * Do not mix interval-average chord speeds with instantaneous knot speeds.
+ */
+function playbackSpeedProfile(actor) {
+  const curve = actor.curve;
+  if (!curve?.speed_mps || curve.time_s.length !== curve.speed_mps.length) return [];
+  return curve.time_s.map((time, index) => ({ time, speed: curve.speed_mps[index] }));
+}
+
+/** Move the timeline marker without redrawing the velocity curve each frame. */
+function updateSpeedProfilePlaybackMarker() {
+  const marker = $("#speed-profile-playhead");
+  const profile = state.speedProfile;
+  const actor = profile?.actor;
+  const start = actor?.waypoints[0]?.time_s;
+  const end = actor?.waypoints.at(-1)?.time_s;
+  const time = currentPlaybackTime();
+  if (!profile || !Number.isFinite(start) || !Number.isFinite(end) || time <= start || time >= end) {
+    marker.hidden = true;
+    return;
+  }
+  const plotWidth = $("#speed-profile-canvas").getBoundingClientRect().width - profile.pad.left - profile.pad.right;
+  marker.style.left = `${profile.pad.left + plotWidth * (time - start) / (end - start)}px`;
+  marker.hidden = false;
 }
 
 /** Draw the editable speed profile and retain its geometry for pointer hit testing. */
 function renderSpeedProfile() {
+  state.speedProfile = null;
   const panel = $("#speed-profile");
   const enabled = state.scenario.settings.show_speed_profile && !state.scenario.settings.map_mode;
   panel.hidden = !enabled;
-  if (!enabled) return;
+  if (!enabled) { updateSpeedProfilePlaybackMarker(); return; }
   const actor = selectedActor(); const canvas = $("#speed-profile-canvas"); const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width * devicePixelRatio; canvas.height = rect.height * devicePixelRatio;
   const context = canvas.getContext("2d"); context.scale(devicePixelRatio, devicePixelRatio); context.clearRect(0, 0, canvas.width, canvas.height);
-  if (!actor?.waypoints.length) return;
-  const distances = profileDistances(actor); const speeds = actor.waypoints.map((point) => Number(point.speed_mps || 0));
+  $("#speed-profile-method").textContent = trajectoryInterpolationLabels[actor?.dimensions.interpolation_mode] || "";
+  if (!actor?.waypoints.length) { updateSpeedProfilePlaybackMarker(); return; }
+  const speeds = actor.waypoints.map((point) => Number(point.speed_mps || 0));
+  const motionSegments = playbackSpeedSegments(actor);
+  const profilePoints = playbackSpeedProfile(actor, motionSegments);
   const pad = { left: 42, right: 15, top: 12, bottom: 25 }; const width = rect.width - pad.left - pad.right; const height = rect.height - pad.top - pad.bottom;
-  const maxDistance = Math.max(distances.at(-1), 1); const maxSpeed = Math.max(1, ...speeds) * 1.15;
-  const pointFor = (index) => [pad.left + width * distances[index] / maxDistance, pad.top + height * (1 - speeds[index] / maxSpeed)];
+  const startTime = actor.waypoints[0].time_s;
+  const duration = Math.max(actor.waypoints.at(-1).time_s - startTime, 0.001);
+  const maxSpeed = profilePoints.reduce((maximum, point) => Math.max(maximum, point.speed), speeds.reduce((maximum, speed) => Math.max(maximum, speed), 1)) * 1.15;
+  const plotPoint = (time, speed) => [pad.left + width * (time - startTime) / duration, pad.top + height * (1 - speed / maxSpeed)];
+  const pointFor = (index) => plotPoint(actor.waypoints[index].time_s, speeds[index]);
   context.strokeStyle = "#718697"; context.lineWidth = 1; context.beginPath(); context.moveTo(pad.left, pad.top); context.lineTo(pad.left, pad.top + height); context.lineTo(pad.left + width, pad.top + height); context.stroke();
-  context.strokeStyle = actorColor(actor); context.lineWidth = 2; context.beginPath(); actor.waypoints.forEach((_, index) => { const point = pointFor(index); index ? context.lineTo(...point) : context.moveTo(...point); }); context.stroke();
+  context.strokeStyle = actorColor(actor); context.lineWidth = 2; context.lineJoin = "round"; context.beginPath();
+  profilePoints.forEach((point, index) => {
+    const position = plotPoint(point.time, point.speed);
+    index ? context.lineTo(...position) : context.moveTo(...position);
+  });
+  context.stroke();
+  context.fillStyle = "#52635a"; context.font = "10px Helvetica, Arial, sans-serif";
+  context.fillText(maxSpeed.toFixed(1), 14, pad.top + 3);
+  context.fillText("0", 28, pad.top + height);
+  context.fillText(startTime.toFixed(2), pad.left, rect.height - 6);
+  context.textAlign = "right";
+  context.fillText(actor.waypoints.at(-1).time_s.toFixed(2), pad.left + width, rect.height - 6);
+  context.textAlign = "left";
   actor.waypoints.forEach((point, index) => {
     const position = pointFor(index); context.fillStyle = "#eb5e28"; context.beginPath(); context.arc(...position, 5, 0, Math.PI * 2); context.fill();
     const labels = [];
-    if (state.scenario.settings.show_point_indices) labels.push(`#${index + 1}`);
-    if (state.scenario.settings.show_waypoint_times) labels.push(`t=${Number(point.time_s).toFixed(2)}s`);
-    if (state.scenario.settings.show_speed_labels) labels.push(`v=${Number(point.speed_mps || 0).toFixed(2)}m/s`);
+    if (state.scenario.settings.show_trajectory_waypoints) {
+      if (state.scenario.settings.show_point_indices) labels.push(`#${index + 1}`);
+      if (state.scenario.settings.show_waypoint_times) labels.push(`t=${Number(point.time_s).toFixed(2)}s`);
+      if (state.scenario.settings.show_speed_labels) labels.push(`v=${Number(point.speed_mps || 0).toFixed(2)}m/s`);
+    }
     if (labels.length) drawLabel(context, position[0], position[1], labels.join(" "), "#15211c");
   });
   if (state.scenario.settings.show_segment_average_speeds) actor.segment_speeds_mps.forEach((speed, index) => {
     const left = pointFor(index); const right = pointFor(index + 1);
     drawLabel(context, (left[0] + right[0]) / 2, (left[1] + right[1]) / 2, `v_avg=${speed.toFixed(2)}m/s`, actorColor(actor));
   });
-  context.fillStyle = "#52635a"; context.font = "11px Helvetica, Arial, sans-serif"; context.fillText("Distance [m]", pad.left + width / 2 - 36, rect.height - 6);
+  context.fillStyle = "#52635a"; context.font = "11px Helvetica, Arial, sans-serif"; context.fillText("Time [s]", pad.left + width / 2 - 24, rect.height - 6);
   context.save(); context.translate(11, pad.top + height / 2 + 30); context.rotate(-Math.PI / 2); context.fillText("Speed [m/s]", 0, 0); context.restore();
-  state.speedProfile = { actor, pointFor, maxSpeed, pad, height };
+  state.speedProfile = { actor, pointFor, maxSpeed, pad, height, motionSegments, profilePoints };
+  updateSpeedProfilePlaybackMarker();
 }
 
 /** Submit all table rows as one ordered trajectory replacement. */

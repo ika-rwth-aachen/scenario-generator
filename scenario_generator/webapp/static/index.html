@@ -165,14 +165,17 @@
         </div>
         <section id="speed-profile" class="panel" hidden>
           <div class="panel-title" role="heading" aria-level="2">
-            Velocity profile
-            <span>Drag a node or edit its exact speed in the trajectory table</span>
+            <span>Velocity profile · <span id="speed-profile-method"></span></span>
+            <span class="profile-legend">Line: trajectory speed · Orange points: editable speed targets</span>
           </div>
-          <canvas
-            id="speed-profile-canvas"
-            role="img"
-            aria-label="Velocity profile for the selected actor. Exact speeds can be edited in the trajectory points table."
-          ></canvas>
+          <div class="speed-profile-plot">
+            <canvas
+              id="speed-profile-canvas"
+              role="img"
+              aria-label="Trajectory speed over time for the selected actor. Orange points show speed targets, editable by dragging or in the trajectory points table."
+            ></canvas>
+            <div id="speed-profile-playhead" aria-hidden="true" hidden></div>
+          </div>
         </section>
         <section id="tables" class="tables panel">
           <nav role="tablist" aria-label="Scenario data tables">
@@ -190,6 +193,7 @@
               <thead>
                 <tr>
                   <th scope="col">Actions</th>
+                  <th scope="col">Point</th>
                   <th scope="col">Time [s]</th>
                   <th scope="col">X [m]</th>
                   <th scope="col">Y [m]</th>
@@ -208,6 +212,7 @@
               <thead>
                 <tr>
                   <th scope="col">Actions</th>
+                  <th scope="col">Point</th>
                   <th scope="col">X [m]</th>
                   <th scope="col">Y [m]</th>
                 </tr>
@@ -253,20 +258,31 @@
       <aside class="inspector panel" aria-label="Scenario controls and export">
         <div id="editing-controls">
           <div class="panel-title" role="heading" aria-level="2">Editing controls</div>
-          <label>
-            Time step [s]
-            <input id="time-step" type="number" min="0.001" step="0.1" />
-          </label>
           <button id="trajectory-direction">
             Timing edits: forward
           </button>
           <button id="waypoint-timing">New points: fixed time step</button>
-          <label id="lane-snap-control" class="check-label">
-            <input id="lane-snap" type="checkbox" />
-            <span>Snap points to lane</span>
-          </label>
           <button id="delete-last-point">Delete last point</button>
           <button id="clear-actor">Clear trajectory</button>
+          <details id="advanced-trajectory-settings" class="additional-info">
+            <summary>Advanced trajectory settings</summary>
+            <label>
+              Time step [s]
+              <input id="time-step" type="number" min="0.001" step="0.1" />
+            </label>
+            <label id="trajectory-interpolation-control">
+              Trajectory interpolation
+              <select id="trajectory-interpolation">
+                <option value="cubic_hermite">Cubic Hermite spline</option>
+                <option value="linear_velocity">Linear velocity</option>
+                <option value="catmull_rom">Catmull-Rom curve</option>
+              </select>
+            </label>
+            <label id="lane-snap-control" class="check-label">
+              <input id="lane-snap" type="checkbox" />
+              <span>Snap points to lane</span>
+            </label>
+          </details>
           <div id="map-actions" hidden>
             <hr />
             <div class="panel-title" role="heading" aria-level="2">Map controls</div>

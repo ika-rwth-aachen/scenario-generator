@@ -2,6 +2,102 @@ const { expect, test } = require("@playwright/test");
 const path = require("path");
 const { ensureVehicleMode, openScenario } = require("./helpers");
 
+test("waypoint label options are indented and disabled with trajectory waypoints", async ({ page }) => {
+  await openScenario(page);
+  await page.getByText("View", { exact: true }).click();
+  const parent = page.locator("#view-show_trajectory_waypoints");
+  const childKeys = ["show_point_indices", "show_waypoint_times", "show_speed_labels"];
+  const children = childKeys.map((key) => page.locator(`#view-${key}`));
+  await parent.check();
+  for (const child of children) await expect(child).toBeEnabled();
+  await children[0].check();
+  const parentLeft = await parent.evaluate((element) => element.closest("label").getBoundingClientRect().left);
+  for (const child of children) {
+    const label = child.locator("xpath=..");
+    await expect(label).toHaveClass(/view-option-dependent/);
+    expect(await child.evaluate((element) => element.closest("label").getBoundingClientRect().left)).toBeGreaterThan(parentLeft);
+  }
+  await parent.uncheck();
+  for (const child of children) {
+    await expect(child).toBeDisabled();
+    await expect(child.locator("xpath=..")).toHaveClass(/unavailable/);
+  }
+  await expect(children[0]).toBeChecked();
+  await parent.check();
+  for (const child of children) await expect(child).toBeEnabled();
+  await expect(children[0]).toBeChecked();
+});
+
+test("vehicle details are nested below Road users and keep their selections", async ({ page }) => {
+  await openScenario(page);
+  await page.getByText("View", { exact: true }).click();
+  const vehicles = page.locator("#view-show_vehicles");
+  const details = [page.locator("#view-show_bounding_boxes"), page.locator("#view-show_actor_names")];
+  await vehicles.check();
+  for (const detail of details) {
+    await detail.check();
+    await expect(detail).toBeEnabled();
+    await expect(detail.locator("xpath=..")).toHaveClass(/view-option-dependent/);
+    const left = await detail.evaluate((element) => element.closest("label").getBoundingClientRect().left);
+    const parentLeft = await vehicles.evaluate((element) => element.closest("label").getBoundingClientRect().left);
+    expect(left).toBeGreaterThan(parentLeft);
+  }
+  await vehicles.uncheck();
+  for (const detail of details) {
+    await expect(detail).toBeDisabled();
+    await expect(detail.locator("xpath=..")).toHaveClass(/unavailable/);
+    await expect(detail).toBeChecked();
+  }
+  expect(await page.evaluate(() => state.labelTargets.some((target) => target.kind === "actor"))).toBe(false);
+  await vehicles.check();
+  for (const detail of details) await expect(detail).toBeEnabled();
+  expect(await page.evaluate(() => state.labelTargets.some((target) => target.kind === "actor"))).toBe(true);
+});
+
+test("TTC and THW refresh at the current time as soon as their View options change", async ({ page }) => {
+  await openScenario(page);
+  await page.getByText("View", { exact: true }).click();
+  let metricText = "TTC test";
+  let requests = 0;
+  await page.route("**/api/metrics?**", async (route) => {
+    requests += 1;
+    await route.fulfill({ json: { vehicle_1: metricText } });
+  });
+  const ttc = page.locator("#view-show_min_ttc");
+  const thw = page.locator("#view-show_min_thw");
+  const initialTime = await page.evaluate(() => currentPlaybackTime());
+  await ttc.check();
+  await expect.poll(() => page.evaluate(() => state.metrics.vehicle_1)).toBe("TTC test");
+  expect(requests).toBe(1);
+  metricText = "THW test";
+  await thw.check();
+  await expect.poll(() => page.evaluate(() => state.metrics.vehicle_1)).toBe("THW test");
+  await ttc.uncheck();
+  await expect.poll(() => page.evaluate(() => state.metrics.vehicle_1)).toBe("THW test");
+  await thw.uncheck();
+  await expect.poll(() => page.evaluate(() => Object.keys(state.metrics))).toEqual([]);
+  expect(requests).toBe(3);
+  expect(await page.evaluate(() => currentPlaybackTime())).toBe(initialTime);
+});
+
+test("a late metric response cannot restore a disabled overlay", async ({ page }) => {
+  await openScenario(page);
+  await page.getByText("View", { exact: true }).click();
+  let requested = 0;
+  await page.route("**/api/metrics?**", async (route) => {
+    requested += 1;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    await route.fulfill({ json: { vehicle_1: "TTC stale" } });
+  });
+  const ttc = page.locator("#view-show_min_ttc");
+  await ttc.check();
+  await expect.poll(() => requested).toBe(1);
+  await ttc.uncheck();
+  await expect.poll(() => page.evaluate(() => state.scenario.settings.show_min_ttc)).toBe(false);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => state.metrics)).toEqual({});
+});
+
 test("switches view options, environmental information, and map mode", async ({ page }) => {
   await openScenario(page);
   await ensureVehicleMode(page);

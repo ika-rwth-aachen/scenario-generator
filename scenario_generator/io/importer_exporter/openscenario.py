@@ -32,8 +32,8 @@ def current_datetime_string() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat(timespec="seconds")
 
 
-def format_float(value: float) -> str:
-    return f"{value:.6f}".rstrip("0").rstrip(".")
+def format_float(value: float, precision: int = 6) -> str:
+    return f"{value:.{precision}f}".rstrip("0").rstrip(".")
 
 
 class OpenScenarioExporter(Exporter):
@@ -882,13 +882,15 @@ class OpenScenarioExporter(Exporter):
                 center_offset = dimensions["length_m"] / 2.0
                 x_m -= center_offset * math.cos(heading)
                 y_m -= center_offset * math.sin(heading)
+        # Dense trajectories need sub-micrometre precision to retain headings
+        # computed from the short displacement between successive samples.
         attributes = {
-            "x": format_float(x_m),
-            "y": format_float(y_m),
-            "z": format_float(z_m),
+            "x": format_float(x_m, 9),
+            "y": format_float(y_m, 9),
+            "z": format_float(z_m, 9),
         }
         if heading_rad is not None:
-            attributes["h"] = format_float(heading_rad)
+            attributes["h"] = format_float(heading_rad, 9)
         return attributes
 
     @staticmethod

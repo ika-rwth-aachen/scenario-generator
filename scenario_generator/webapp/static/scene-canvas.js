@@ -261,14 +261,14 @@ function draw() {
     drawPolyline(context, curvePoints, transform);
     context.restore();
     context.fillStyle = color;
-    if (state.scenario.settings.show_vehicles || state.scenario.settings.show_bounding_boxes || state.scenario.settings.show_actor_names || state.metrics[actor.name]) {
+    if (state.scenario.settings.show_vehicles || state.metrics[actor.name]) {
       const position = positionAt(actor, currentPlaybackTime());
       if (position) {
         const transformed = [...transform(position), position[2]];
         const dimensions = actor.dimensions;
         const active = trajectoryActiveAt(actor, currentPlaybackTime());
-        const body = drawVehicleBody(context, transformed, dimensions, color, view, state.scenario.settings.show_vehicles, state.scenario.settings.show_bounding_boxes, active ? 0.62 : 0.32, !active);
-        if (state.scenario.settings.show_actor_names) drawLabel(context, transformed[0], transformed[1] + body.width / 2 + 20, actor.name, color, { kind: "actor", actorName: actor.name });
+        const body = drawVehicleBody(context, transformed, dimensions, color, view, state.scenario.settings.show_vehicles, state.scenario.settings.show_vehicles && state.scenario.settings.show_bounding_boxes, active ? 0.62 : 0.32, !active);
+        if (state.scenario.settings.show_vehicles && state.scenario.settings.show_actor_names) drawLabel(context, transformed[0], transformed[1] + body.width / 2 + 20, actor.name, color, { kind: "actor", actorName: actor.name });
         if (state.metrics[actor.name]) drawLabel(context, transformed[0], transformed[1] - body.width, state.metrics[actor.name], "#15211c");
       }
     }
@@ -507,7 +507,7 @@ $("#map-canvas").onclick = async (event) => {
     const labelTarget = canvasLabelTarget(event);
     if (labelTarget) {
       state.selected = labelTarget.actorName;
-      draw();
+      render();
       setStatus("Actor selected. Double-click the label to edit its value.");
       return;
     }
@@ -910,6 +910,7 @@ $("#map-canvas").onpointerdown = (event) => {
   const point = target.actor.waypoints[target.index];
   state.dragTarget = { ...target, kind: "actor", pointerId: event.pointerId, originalPoint: [point.x_m, point.y_m], startClientX: event.clientX, startClientY: event.clientY }; state.selected = target.actor.name; state.didDrag = false;
   event.currentTarget.setPointerCapture(event.pointerId); event.preventDefault();
+  render();
 };
 
 $("#map-canvas").onpointermove = (event) => {

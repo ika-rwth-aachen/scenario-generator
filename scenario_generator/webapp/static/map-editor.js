@@ -1,11 +1,18 @@
 // Map mode, road editing, table views, and Scenario Quality Checker controls.
 
+// Keep a native select usable while its latest choice is being recalculated.
+const pendingInterpolationUpdates = new Map();
+
 // View toggles are grouped by the part of the application they affect.
 const viewOptionGroups = [
   ["Table view", [["show_waypoint_table", "Trajectory points table"], ["show_road_waypoint_table", "Road waypoints table"], ["show_road_relations_table", "Road relations table"], ["show_detection_gaps", "Perception gaps"], ["show_speed_profile", "Velocity profile"]]],
-  ["Road user view", [["show_vehicles", "Vehicles"], ["show_bounding_boxes", "Bounding boxes"], ["show_trajectory_waypoints", "Trajectory waypoints"], ["show_point_indices", "Point indices"], ["show_waypoint_times", "Waypoint times"], ["show_speed_labels", "Speed labels"], ["show_segment_average_speeds", "Segment average speeds"], ["show_actor_names", "Actor names"], ["show_min_ttc", "TTC min"], ["show_min_thw", "THW min"]]],
+  ["Road user view", [["show_vehicles", "Road users"], ["show_bounding_boxes", "Bounding boxes"], ["show_actor_names", "Names"], ["show_trajectory_waypoints", "Trajectory waypoints"], ["show_point_indices", "Point indices"], ["show_waypoint_times", "Waypoint times"], ["show_speed_labels", "Speed labels"], ["show_segment_average_speeds", "Segment average speeds"], ["show_min_ttc", "TTC min"], ["show_min_thw", "THW min"]]],
   ["Map view", [["show_map", "XODR map"], ["show_road_connections", "Road connections"], ["show_road_points", "Road points"], ["show_lane_numbers", "Lane numbers"], ["show_road_centerlines", "Road centerlines"], ["show_map_helpers", "Map helper lines"]]],
 ];
+const trajectoryWaypointOptions = new Set([
+  "show_point_indices", "show_waypoint_times", "show_speed_labels",
+]);
+const vehicleOptions = new Set(["show_bounding_boxes", "show_actor_names"]);
 
 /** Keep the View popover beside its trigger without crossing viewport edges. */
 function positionViewOptions() {
@@ -75,7 +82,12 @@ function renderMode() {
   $("#add-actor").textContent = mapMode ? "Add road" : "Add actor";
   $("#delete-actor").hidden = mapMode;
   $("#map-actions").hidden = !mapMode;
-  [$("#time-step").closest("label"), $("#trajectory-direction"), $("#waypoint-timing"), $("#lane-snap-control"), $("#delete-last-point"), $("#clear-actor")].forEach((element) => { element.hidden = mapMode; });
+  $("#advanced-trajectory-settings").hidden = mapMode;
+  $("#trajectory-interpolation").disabled = !selectedActor();
+  const interpolationUpdate = pendingInterpolationUpdates.get(state.selected);
+  $("#trajectory-interpolation").value = interpolationUpdate?.mode || selectedActor()?.dimensions.interpolation_mode || "cubic_hermite";
+  $("#trajectory-interpolation").setAttribute("aria-busy", String(Boolean(interpolationUpdate)));
+  [$("#trajectory-direction"), $("#waypoint-timing"), $("#delete-last-point"), $("#clear-actor")].forEach((element) => { element.hidden = mapMode; });
   $("#time-step").value = state.scenario.settings.time_step_s;
   const direction = state.scenario.settings.trajectory_calculation_mode;
   const timingMode = state.scenario.settings.waypoint_timing_mode;
@@ -113,14 +125,21 @@ function renderMode() {
     entries.forEach(([key, label]) => {
       const entry = document.createElement("label");
       entry.className = "check-label";
+      const dependsOnWaypoints = trajectoryWaypointOptions.has(key);
+      const dependsOnVehicles = vehicleOptions.has(key);
+      entry.classList.toggle("view-option-dependent", dependsOnWaypoints || dependsOnVehicles);
       const input = document.createElement("input");
       input.id = `view-${key}`;
       input.type = "checkbox"; input.checked = state.scenario.settings[key];
-      input.disabled = mapMode
+      const unavailableInMode = mapMode
         ? ["show_detection_gaps", "show_speed_profile", "show_min_ttc", "show_min_thw", "show_waypoint_table"].includes(key)
         : ["show_road_waypoint_table", "show_road_relations_table"].includes(key);
+      input.disabled = unavailableInMode
+        || (dependsOnWaypoints && !state.scenario.settings.show_trajectory_waypoints)
+        || (dependsOnVehicles && !state.scenario.settings.show_vehicles);
       entry.classList.toggle("unavailable", input.disabled);
-      if (input.disabled) entry.title = "Unavailable in current mode";
+      if (input.disabled) entry.title = unavailableInMode ? "Unavailable in current mode"
+        : dependsOnVehicles ? "Enable Road users first" : "Enable Trajectory waypoints first";
       input.onchange = () => updateSettings({ [key]: input.checked }, input);
       const text = document.createElement("span");
       text.textContent = label;
@@ -184,6 +203,10 @@ function renderRoadPoints() {
     const roadName = road.name || `road ${selectedRoadIndex() + 1}`;
     const row = document.createElement("tr");
     row.innerHTML = `<td><button id="road-point-${pointIndex}-insert" type="button" class="insert" aria-label="Insert (+) road point before point ${pointIndex + 1}">+</button><button id="road-point-${pointIndex}-remove" type="button" class="remove" aria-label="Remove (−) road point ${pointIndex + 1}">−</button></td><td><input id="road-point-${pointIndex}-x" type="number" step="any" value="${point[0]}"></td><td><input id="road-point-${pointIndex}-y" type="number" step="any" value="${point[1]}"></td>`;
+    const pointNumber = document.createElement("th");
+    pointNumber.scope = "row";
+    pointNumber.textContent = String(pointIndex + 1);
+    row.insertBefore(pointNumber, row.children[1]);
     const coordinateInputs = row.querySelectorAll("input");
     coordinateInputs[0].setAttribute("aria-label", `${roadName}, road point ${pointIndex + 1}, X coordinate in metres`);
     coordinateInputs[1].setAttribute("aria-label", `${roadName}, road point ${pointIndex + 1}, Y coordinate in metres`);
@@ -350,7 +373,10 @@ async function updateSettings(payload, sourceField = null) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    const metricsChanged = "show_min_ttc" in payload || "show_min_thw" in payload;
+    if (metricsChanged) clearPlaybackMetrics();
     await refresh();
+    if (metricsChanged) await updatePlayback(currentPlaybackTime());
   } catch (error) {
     if (sourceField) markFieldInvalid(sourceField, error.message);
     else setStatus(error.message);
@@ -409,6 +435,43 @@ $("#time-step").onchange = () => updateSettings({ time_step_s: Number($("#time-s
 $("#lane-snap").onchange = () => updateSettings({ lane_snap_enabled: $("#lane-snap").checked }, $("#lane-snap"));
 $("#trajectory-direction").onclick = () => updateSettings({ trajectory_calculation_mode: state.scenario.settings.trajectory_calculation_mode === "forward" ? "backward" : "forward" });
 $("#waypoint-timing").onclick = () => updateSettings({ waypoint_timing_mode: state.scenario.settings.waypoint_timing_mode === "fixed_time" ? "constant_speed" : "fixed_time" });
+async function updateTrajectoryInterpolation(event) {
+  const actor = selectedActor();
+  if (!actor) return;
+  const control = event.currentTarget;
+  const interpolationMode = control.value;
+  const pending = pendingInterpolationUpdates.get(actor.name);
+  // Native selects can emit both input and change for the same choice.
+  if (pending?.mode === interpolationMode || (!pending && actor.dimensions.interpolation_mode === interpolationMode)) return;
+  const update = { mode: interpolationMode };
+  pendingInterpolationUpdates.set(actor.name, update);
+  control.setAttribute("aria-busy", "true");
+  try {
+    const scenario = await api(`/api/actors/${actor.name}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ interpolation_mode: interpolationMode }),
+    });
+    if (pendingInterpolationUpdates.get(actor.name) !== update) return;
+    pendingInterpolationUpdates.delete(actor.name);
+    state.scenario = scenario;
+    render();
+    await updatePlayback(currentPlaybackTime());
+    // Paint after the native dropdown closes and the refreshed panels lay out.
+    requestAnimationFrame(() => {
+      renderSpeedProfile();
+      draw();
+    });
+    setStatus(`${actor.name}: ${trajectoryInterpolationLabels[interpolationMode]} updated`);
+  } catch (error) {
+    if (pendingInterpolationUpdates.get(actor.name) !== update) return;
+    pendingInterpolationUpdates.delete(actor.name);
+    renderMode();
+    setStatus(error.message);
+  }
+}
+$("#trajectory-interpolation").addEventListener("input", updateTrajectoryInterpolation);
+$("#trajectory-interpolation").addEventListener("change", updateTrajectoryInterpolation);
 $("#export-2d").onchange = () => updateSettings({ export_2d: $("#export-2d").checked }, $("#export-2d"));
 $("#show-sqc-warnings").onchange = () => updateSettings({ show_sqc_warnings: $("#show-sqc-warnings").checked }, $("#show-sqc-warnings"));
 $("#show-sqc-errors").onchange = () => updateSettings({ show_sqc_errors: $("#show-sqc-errors").checked }, $("#show-sqc-errors"));
