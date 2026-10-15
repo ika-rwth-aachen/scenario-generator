@@ -217,7 +217,7 @@ def test_scenario_config_roundtrip_preserves_dimensions_map_and_gaps(tmp_path):
     assert "trajectory_creation_mode" not in config
 
 
-@pytest.mark.parametrize("mode", ["cubic_hermite", "linear_velocity", "catmull_rom"])
+@pytest.mark.parametrize("mode", ["hermite", "linear_velocity", "catmull_rom"])
 def test_scenario_config_roundtrip_preserves_interpolation(tmp_path, mode):
     path = tmp_path / "interpolation_config.json"
     vehicles = {"ego": [Waypoint(0, 0, 0, 5), Waypoint(2, 10, 0, 5)]}

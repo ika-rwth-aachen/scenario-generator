@@ -16,9 +16,9 @@ function applicationUrl(path) {
 // Keep the palette aligned with the established desktop canvas.
 const actorColors = ["#a64b4b", "#416b94", "#39704a", "#8c5a2b", "#73578c", "#2f6f73"];
 const trajectoryInterpolationLabels = {
-  cubic_hermite: "Cubic Hermite spline",
+  hermite: "Hermite",
   linear_velocity: "Linear velocity",
-  catmull_rom: "Catmull-Rom curve",
+  catmull_rom: "Catmull-Rom",
 };
 const tooltipSpecs = [
   ["#add-actor", () => state.scenario.settings.map_mode

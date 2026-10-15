@@ -45,7 +45,7 @@ def test_cut_in_modes_preserve_waypoints_and_expose_actual_motion(mode):
         assert series["y_m"][index] == pytest.approx(point.y_m)
     speeds = playback_speeds(series)
     assert all(math.isfinite(speed) and speed >= 0.0 for speed in speeds)
-    if mode in ("cubic_hermite", "catmull_rom"):
+    if mode in ("hermite", "catmull_rom"):
         assert min(speeds) >= 4.0
         assert max(speeds) <= 16.0
     else:
@@ -63,7 +63,7 @@ def test_constant_target_speed_is_constant_motion_even_with_two_points(mode):
 
 
 @pytest.mark.parametrize("mode, quarter_distance, quarter_speed", [
-    ("cubic_hermite", 0.625, 2.5),
+    ("hermite", 0.625, 2.5),
     ("linear_velocity", 0.625, 2.5),
 ])
 def test_minimum_acceleration_for_consistent_timing(mode, quarter_distance, quarter_speed):
@@ -103,12 +103,23 @@ def test_unknown_interpolation_is_rejected():
         Trajectory([Waypoint(0, 0, 0), Waypoint(1, 1, 0)], interpolation_mode="invalid").as_series()
 
 
+@pytest.mark.parametrize("mode", ["minimum_acceleration", "linear_speed", "catmull_rom_velocity"])
+def test_superseded_interpolation_modes_are_rejected(mode):
+    with pytest.raises(ValueError, match="Unsupported trajectory interpolation"):
+        Trajectory(interpolation_mode=mode)
+
+
+def test_main_hermite_mode_is_normalized():
+    trajectory = Trajectory(interpolation_mode="cubic_hermite")
+    assert trajectory.interpolation_mode == "hermite"
+
+
 @pytest.mark.parametrize("mode", TRAJECTORY_INTERPOLATION_MODES)
 def test_sampling_is_at_least_50_hz_with_exact_knots(mode):
     points = cut_in_waypoints()
     series = Trajectory(points, interpolation_mode=mode).as_series()
     assert max(b - a for a, b in zip(series["time_s"], series["time_s"][1:])) <= 0.02 + 1e-12
-    if mode in ("cubic_hermite", "catmull_rom"):
+    if mode in ("hermite", "catmull_rom"):
         for point in points:
             assert series["speed_mps"][series["time_s"].index(point.time_s)] == pytest.approx(point.speed_mps)
 

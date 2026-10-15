@@ -85,7 +85,7 @@ function renderMode() {
   $("#advanced-trajectory-settings").hidden = mapMode;
   $("#trajectory-interpolation").disabled = !selectedActor();
   const interpolationUpdate = pendingInterpolationUpdates.get(state.selected);
-  $("#trajectory-interpolation").value = interpolationUpdate?.mode || selectedActor()?.dimensions.interpolation_mode || "cubic_hermite";
+  $("#trajectory-interpolation").value = interpolationUpdate?.mode || selectedActor()?.dimensions.interpolation_mode || "hermite";
   $("#trajectory-interpolation").setAttribute("aria-busy", String(Boolean(interpolationUpdate)));
   [$("#trajectory-direction"), $("#waypoint-timing"), $("#delete-last-point"), $("#clear-actor")].forEach((element) => { element.hidden = mapMode; });
   $("#time-step").value = state.scenario.settings.time_step_s;

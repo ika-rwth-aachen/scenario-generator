@@ -29,7 +29,7 @@ test("dropdown input updates both canvases without blur or canvas interaction", 
     element.value = "catmull_rom";
     element.dispatchEvent(new Event("input", { bubbles: true }));
   });
-  await expect(page.locator("#speed-profile-method")).toHaveText("Catmull-Rom curve");
+  await expect(page.locator("#speed-profile-method")).toHaveText("Catmull-Rom");
   await expect(select).toBeFocused();
   await expect(select).toHaveAttribute("aria-busy", "false");
   expect(await page.locator("#map-canvas").evaluate((canvas) => canvas.toDataURL())).not.toBe(before.canvas);
@@ -66,11 +66,11 @@ test("remembers interpolation per actor and uses the last choice for new actors"
   await openScenario(page);
   await page.locator("#advanced-trajectory-settings summary").click();
   const select = page.locator("#trajectory-interpolation");
-  await expect(select).toHaveValue("cubic_hermite");
+  await expect(select).toHaveValue("hermite");
   await select.selectOption("linear_velocity");
   await expect(select).toBeEnabled();
   await page.locator("#actor-list .actor").nth(1).click();
-  await expect(select).toHaveValue("cubic_hermite");
+  await expect(select).toHaveValue("hermite");
   await page.locator("#add-actor").click();
   await expect(page.locator("#actor-list .actor")).toHaveCount(3);
   await expect(select).toHaveValue("linear_velocity");
@@ -91,7 +91,7 @@ test("remembers interpolation per actor and uses the last choice for new actors"
     return response.json();
   });
   expect(config.vehicles.map((actor) => actor.dimensions.interpolation_mode)).toEqual([
-    "linear_velocity", "cubic_hermite", "catmull_rom", "catmull_rom",
+    "linear_velocity", "hermite", "catmull_rom", "catmull_rom",
   ]);
   await page.locator("#mode-toggle").click();
   await expect(select).toBeHidden();
@@ -117,12 +117,12 @@ test("velocity profile measures the same motion as canvas playback in every mode
   const positions = [];
   const canvasImages = [];
   const profileImages = [];
-  for (const mode of ["cubic_hermite", "linear_velocity", "catmull_rom"]) {
+  for (const mode of ["hermite", "linear_velocity", "catmull_rom"]) {
     await page.locator("#trajectory-interpolation").selectOption(mode);
     await expect.poll(() => page.evaluate(() => selectedActor().dimensions.interpolation_mode)).toBe(mode);
     await expect(page.locator("#speed-profile-method")).toHaveText({
-      cubic_hermite: "Cubic Hermite spline", linear_velocity: "Linear velocity",
-      catmull_rom: "Catmull-Rom curve",
+      hermite: "Hermite", linear_velocity: "Linear velocity",
+      catmull_rom: "Catmull-Rom",
     }[mode]);
     const measured = await page.evaluate(() => {
       const actor = selectedActor();
@@ -204,11 +204,11 @@ test("selecting a trajectory in the canvas updates its interpolation controls an
   await page.mouse.click(target.x, target.y);
   await expect(page.locator("#actor-name")).toHaveValue("vehicle_2");
   await expect(page.locator("#trajectory-interpolation")).toHaveValue("catmull_rom");
-  await expect(page.locator("#speed-profile-method")).toHaveText("Catmull-Rom curve");
+  await expect(page.locator("#speed-profile-method")).toHaveText("Catmull-Rom");
   await page.locator("#trajectory-interpolation").selectOption("linear_velocity");
   await expect(page.locator("#speed-profile-method")).toHaveText("Linear velocity");
   expect(await page.evaluate(() => state.scenario.actors.map((actor) => actor.dimensions.interpolation_mode)))
-    .toEqual(["cubic_hermite", "linear_velocity"]);
+    .toEqual(["hermite", "linear_velocity"]);
   const label = await page.evaluate(() => {
     const target = state.labelTargets.find((entry) => entry.kind === "actor" && entry.actorName === "vehicle_1");
     const rect = $("#map-canvas").getBoundingClientRect();
@@ -216,8 +216,8 @@ test("selecting a trajectory in the canvas updates its interpolation controls an
   });
   await page.mouse.click(label.x, label.y);
   await expect(page.locator("#actor-name")).toHaveValue("vehicle_1");
-  await expect(page.locator("#trajectory-interpolation")).toHaveValue("cubic_hermite");
-  await expect(page.locator("#speed-profile-method")).toHaveText("Cubic Hermite spline");
+  await expect(page.locator("#trajectory-interpolation")).toHaveValue("hermite");
+  await expect(page.locator("#speed-profile-method")).toHaveText("Hermite");
 });
 
 test("trajectory and road tables renumber points after insertion and deletion", async ({ page }) => {

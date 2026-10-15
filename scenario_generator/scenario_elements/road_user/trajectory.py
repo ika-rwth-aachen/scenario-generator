@@ -14,13 +14,22 @@ from scenario_generator.geometry_utils import (
     normalize_angle_rad,
 )
 
+# These modes select the trajectory's time parameterization. The spatial
+# (x, y) path remains a Catmull-Rom curve for every mode.
 TRAJECTORY_INTERPOLATION_MODES = (
-    "cubic_hermite", "linear_velocity", "catmull_rom",
+    "hermite", "linear_velocity", "catmull_rom",
 )
-DEFAULT_TRAJECTORY_INTERPOLATION = "cubic_hermite"
+DEFAULT_TRAJECTORY_INTERPOLATION = "hermite"
+
+
+INTERPOLATION_MODE_ALIASES = {
+    # Name used by main before the Hermite mode was simplified.
+    "cubic_hermite": "hermite",
+}
 
 
 def validate_interpolation_mode(value: str) -> str:
+    value = INTERPOLATION_MODE_ALIASES.get(value, value)
     if value not in TRAJECTORY_INTERPOLATION_MODES:
         raise ValueError(f"Unsupported trajectory interpolation: {value}")
     return value
@@ -46,6 +55,11 @@ class Trajectory:
     PROFILE_DISTANCE_SAMPLES_PER_SEGMENT = load_profile_distance_samples_per_segment()
     MIN_DISTANCE_M = 1e-9
     MIN_SPEED_SUM_MPS = 1e-9
+
+    def __post_init__(self) -> None:
+        self.interpolation_mode = validate_interpolation_mode(
+            self.interpolation_mode
+        )
 
     def as_series(self) -> dict[str, list[float] | list[bool]]:
         if len(self.waypoints) == 1:
@@ -442,6 +456,7 @@ class Trajectory:
 
         A zero-value, zero-slope quartic correction preserves segment distance
         without rescaling target speeds or breaking acceleration continuity.
+        The public ``catmull_rom`` mode refers to these velocity tangents.
         """
         slopes = [(speeds[1] - speeds[0]) / durations[0]]
         slopes.extend((speeds[i + 1] - speeds[i - 1]) / (durations[i - 1] + durations[i])
@@ -488,7 +503,8 @@ class Trajectory:
         Hermite preserves endpoint speeds and minimizes squared acceleration.
         Linear velocity is scaled when fixed times and target speeds disagree.
         """
-        validate_interpolation_mode(self.interpolation_mode)
+        mode = validate_interpolation_mode(self.interpolation_mode)
+        self.interpolation_mode = mode
         waypoints = self.sorted_waypoints()
         self.validate_moving_waypoints(waypoints)
         waypoint_speeds, _adjusted = self.resolved_waypoint_speeds()
@@ -506,8 +522,8 @@ class Trajectory:
             arc_tables.append((arc_points, distances))
             lengths.append(distances[-1])
         profiles = (self.continuous_hermite_profiles(lengths, durations, waypoint_speeds)
-                    if self.interpolation_mode == "cubic_hermite" and len(waypoints) > 2 else None)
-        if self.interpolation_mode == "catmull_rom":
+                    if mode == "hermite" and len(waypoints) > 2 else None)
+        if mode == "catmull_rom":
             profiles = self.catmull_rom_velocity_profiles(lengths, durations, waypoint_speeds)
         sampled_points: list[tuple[float, float, float]] = []
         speed_values: list[float] = []
@@ -526,7 +542,7 @@ class Trajectory:
             length = lengths[segment_index]
             for time_s, x_m, y_m in segment_points:
                 fraction = (time_s - start_time) / duration
-                if self.interpolation_mode in ("cubic_hermite", "catmull_rom"):
+                if mode in ("hermite", "catmull_rom"):
                     if profiles is None:
                         distance, speed = self.hermite_distance_speed(
                             length, duration, start_speed, end_speed, fraction,

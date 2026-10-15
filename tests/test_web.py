@@ -18,9 +18,9 @@ from scenario_generator.scenario_elements.road_user.trajectory import TRAJECTORY
 def test_web_interpolation_is_per_actor_and_new_actors_inherit_last_choice(monkeypatch):
     scenario = web_server.WebScenario()
     monkeypatch.setattr(web_server, "scenario", scenario)
-    assert scenario.dimensions["vehicle_1"].interpolation_mode == "cubic_hermite"
+    assert scenario.dimensions["vehicle_1"].interpolation_mode == "hermite"
     web_server.update_actor("vehicle_1", {"interpolation_mode": "linear_velocity"})
-    assert scenario.dimensions["vehicle_2"].interpolation_mode == "cubic_hermite"
+    assert scenario.dimensions["vehicle_2"].interpolation_mode == "hermite"
     assert scenario.dimensions[scenario.add_actor()].interpolation_mode == "linear_velocity"
     web_server.update_actor("vehicle_2", {"interpolation_mode": "catmull_rom"})
     assert scenario.dimensions["vehicle_1"].interpolation_mode == "linear_velocity"
@@ -29,7 +29,7 @@ def test_web_interpolation_is_per_actor_and_new_actors_inherit_last_choice(monke
         web_server.update_actor("vehicle_1", {"interpolation_mode": "unknown"})
     assert scenario.dimensions["vehicle_1"].interpolation_mode == "linear_velocity"
     assert scenario.default_interpolation_mode == "catmull_rom"
-    assert web_server.WebScenario().default_interpolation_mode == "cubic_hermite"
+    assert web_server.WebScenario().default_interpolation_mode == "hermite"
 
 
 @pytest.mark.parametrize("mode", TRAJECTORY_INTERPOLATION_MODES)

@@ -28,7 +28,7 @@ class VehicleDimensions:
     interpolation_mode: str = DEFAULT_TRAJECTORY_INTERPOLATION
 
     def __post_init__(self):
-        validate_interpolation_mode(self.interpolation_mode)
+        self.interpolation_mode = validate_interpolation_mode(self.interpolation_mode)
 
     def as_dict(self) -> dict[str, float | str]:
         """Serialize dimensions and export metadata into config-compatible keys."""

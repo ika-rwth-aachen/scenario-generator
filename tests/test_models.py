@@ -83,7 +83,7 @@ def test_vehicle_dimensions_as_dict_includes_actor_and_blueprint():
         "parameter_declarations": '<ParameterDeclaration name="speed" parameterType="double" value="10" />',
         "controller_name": "lane_follower",
         "controller_xml": '<Controller name="lane_follower"><Properties /></Controller>',
-        "interpolation_mode": "cubic_hermite",
+        "interpolation_mode": "hermite",
     }
 
 
