@@ -1,4 +1,14 @@
 // Playback, environmental templates, and remaining application event bindings.
+let metricsRequestVersion = 0;
+let nextMetricsRequest = 0;
+let appliedMetricsRequest = 0;
+
+/** Drop labels and responses calculated for an earlier metric selection. */
+function clearPlaybackMetrics() {
+  metricsRequestVersion += 1;
+  appliedMetricsRequest = nextMetricsRequest;
+  state.metrics = {};
+}
 
 /** Use the latest actor waypoint as playback's natural upper time bound. */
 function scenarioEndTime() {
@@ -26,17 +36,24 @@ async function updatePlayback(requestedTime) {
   state.playbackTime = value;
   $("#time-output").value = `${value.toFixed(2)} s`;
   slider.setAttribute("aria-valuetext", `${value.toFixed(2)} seconds`);
-  if (state.scenario.settings.show_min_ttc || state.scenario.settings.show_min_thw) {
-    try {
-      state.metrics = await api(`/api/metrics?time_s=${encodeURIComponent(value)}`);
-    } catch (error) {
-      setStatus(error.message);
-    }
-  } else {
-    state.metrics = {};
-  }
+  updateSpeedProfilePlaybackMarker();
+  const showMetrics = state.scenario.settings.show_min_ttc || state.scenario.settings.show_min_thw;
+  if (!showMetrics) clearPlaybackMetrics();
   draw();
   updateCanvasSummary();
+  if (!showMetrics) return;
+  const requestVersion = metricsRequestVersion;
+  const requestId = ++nextMetricsRequest;
+  try {
+    const metrics = await api(`/api/metrics?time_s=${encodeURIComponent(value)}`);
+    if (requestVersion !== metricsRequestVersion || requestId < appliedMetricsRequest) return;
+    appliedMetricsRequest = requestId;
+    state.metrics = metrics;
+    draw();
+  } catch (error) {
+    if (requestVersion !== metricsRequestVersion) return;
+    setStatus(error.message);
+  }
 }
 /** Advance the timeline at animation-frame cadence and wrap at the scenario end. */
 function playbackStep() {

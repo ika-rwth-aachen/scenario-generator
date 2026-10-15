@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-CURVE_SAMPLE_PERIOD_S = 0.1
+CURVE_SAMPLE_PERIOD_S = 0.02  # 50 Hz; waypoint boundaries are sampled exactly.
 MIN_CURVE_SAMPLES_PER_SEGMENT = 8
 MEASUREMENT_SNAP_DISTANCE_PX = 16.0
 

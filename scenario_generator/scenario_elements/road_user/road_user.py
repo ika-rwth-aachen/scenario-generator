@@ -6,7 +6,9 @@ from dataclasses import dataclass, field
 
 from scenario_generator.config.settings import load_actor_dimensions
 from scenario_generator.geometry_utils import interpolate_angle, interpolate_series
-from scenario_generator.scenario_elements.road_user.trajectory import Trajectory, Waypoint
+from scenario_generator.scenario_elements.road_user.trajectory import (
+    DEFAULT_TRAJECTORY_INTERPOLATION, Trajectory, Waypoint, validate_interpolation_mode,
+)
 
 
 @dataclass
@@ -23,6 +25,10 @@ class VehicleDimensions:
     controller_name: str = ""
     controller_xml: str = ""
     parked_yaw_rad: float = 0.0
+    interpolation_mode: str = DEFAULT_TRAJECTORY_INTERPOLATION
+
+    def __post_init__(self):
+        self.interpolation_mode = validate_interpolation_mode(self.interpolation_mode)
 
     def as_dict(self) -> dict[str, float | str]:
         """Serialize dimensions and export metadata into config-compatible keys."""
@@ -36,6 +42,7 @@ class VehicleDimensions:
             "parameter_declarations": self.parameter_declarations,
             "controller_name": self.controller_name,
             "controller_xml": self.controller_xml,
+            "interpolation_mode": self.interpolation_mode,
         }
 
 
@@ -189,6 +196,7 @@ class RoadUser:
         self.trajectory.detected = value
 
     def as_trajectory_series(self) -> dict[str, list[float] | list[bool]]:
+        self.trajectory.interpolation_mode = self.dimensions.interpolation_mode
         return self.trajectory.as_series()
 
     def state_at(self, time_s: float) -> ActorState:

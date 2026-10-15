@@ -538,6 +538,9 @@ hr {
   cursor: pointer;
   font-weight: 700;
 }
+#advanced-trajectory-settings {
+  margin-top: 12px;
+}
 .environmental-template {
   position: relative;
   width: 100%;
@@ -807,6 +810,11 @@ dialog::backdrop {
   color: var(--ink);
   font-size: 12px;
 }
+.canvas-toolbar #view-options label.view-option-dependent {
+  margin-left: 10px;
+  padding-left: 12px;
+  border-left: 2px solid var(--line);
+}
 .canvas-toolbar #view-options label.unavailable {
   color: var(--muted);
   cursor: not-allowed;
@@ -853,8 +861,10 @@ dialog::backdrop {
 }
 #speed-profile .panel-title {
   margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
 }
-#speed-profile .panel-title span {
+#speed-profile .profile-legend {
   color: var(--muted);
   font-size: 11px;
   font-weight: 400;
@@ -862,7 +872,23 @@ dialog::backdrop {
 #speed-profile-canvas {
   width: 100%;
   height: 145px;
+  display: block;
   cursor: ns-resize;
+}
+.speed-profile-plot {
+  position: relative;
+}
+#speed-profile-playhead {
+  position: absolute;
+  top: 12px;
+  bottom: 25px;
+  width: 2px;
+  background: var(--navy);
+  box-shadow: 0 0 0 1px #fff9;
+  pointer-events: none;
+}
+#speed-profile-playhead[hidden] {
+  display: none;
 }
 #help-content {
   max-height: 65vh;

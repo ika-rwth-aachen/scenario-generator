@@ -303,9 +303,9 @@ def test_openscenario_converts_gui_bounding_box_centers_to_actor_references():
         "/PrivateAction/TeleportAction/Position/WorldPosition",
     )
     assert car_position is not None
-    assert car_position.attrib == {"x": "10", "y": "3", "z": "100", "h": "1.570796"}
+    assert car_position.attrib == {"x": "10", "y": "3", "z": "100", "h": "1.570796327"}
     assert walker_position is not None
-    assert walker_position.attrib == {"x": "2", "y": "3", "z": "100.9", "h": "1.570796"}
+    assert walker_position.attrib == {"x": "2", "y": "3", "z": "100.9", "h": "1.570796327"}
 
     car_center = root.find(".//ScenarioObject[@name='car']//BoundingBox/Center")
     walker_center = root.find(".//ScenarioObject[@name='walker']//BoundingBox/Center")

@@ -193,4 +193,4 @@ $("#generate-files").onclick = async () => {
 };
 
 $("#fit-view").onclick = () => { state.camera = null; draw(); };
-window.onresize = draw;
+window.onresize = () => { renderSpeedProfile(); draw(); };

@@ -62,7 +62,9 @@ from scenario_generator.scenario_elements.road_user.road_user import (
     actor_state_from_trajectory,
     safe_vehicle_name,
 )
-from scenario_generator.scenario_elements.road_user.trajectory import Trajectory, Waypoint
+from scenario_generator.scenario_elements.road_user.trajectory import (
+    DEFAULT_TRAJECTORY_INTERPOLATION, Trajectory, Waypoint, validate_interpolation_mode,
+)
 
 WEBAPP_RESOURCES = files("scenario_generator.webapp")
 PACKAGE_RESOURCES = files("scenario_generator")
@@ -360,6 +362,7 @@ class WebScenario:
             "adjustment_warnings_enabled": True,
         }
         self.actor_counter = 0
+        self.default_interpolation_mode = DEFAULT_TRAJECTORY_INTERPOLATION
         self.add_actor()
         self.add_actor()
 
@@ -382,7 +385,9 @@ class WebScenario:
             Waypoint(1.0, offset + 13.33, 0.0, speed_mps=13.33),
             Waypoint(2.0, offset + 26.66, 0.0, speed_mps=13.33),
         ]
-        self.dimensions[name] = VehicleDimensions()
+        self.dimensions[name] = VehicleDimensions(
+            interpolation_mode=self.default_interpolation_mode,
+        )
         return name
 
     def next_actor_counter(self) -> int:
@@ -999,7 +1004,10 @@ class WebScenario:
                     waypoints=waypoints, parked_yaw_rad=dimensions.parked_yaw_rad
                 ).as_parked_series()
                 if len(waypoints) == 1
-                else Trajectory(waypoints=waypoints).as_moving_series()
+                else Trajectory(
+                    waypoints=waypoints,
+                    interpolation_mode=dimensions.interpolation_mode,
+                ).as_moving_series()
             )
             trajectory["actor_type"] = dimensions.actor_type
             trajectory["detected"] = [
@@ -1154,7 +1162,8 @@ class WebScenario:
         """Serialize one actor with the exact curve used by desktop playback."""
         dimensions = self.dimensions[name]
         trajectory = Trajectory(
-            waypoints=waypoints, parked_yaw_rad=dimensions.parked_yaw_rad
+            waypoints=waypoints, parked_yaw_rad=dimensions.parked_yaw_rad,
+            interpolation_mode=dimensions.interpolation_mode,
         )
         curve = trajectory.as_series() if waypoints else {}
         return {
@@ -2077,6 +2086,13 @@ def update_actor(name: str, payload: dict[str, Any]) -> dict[str, object]:
     if name not in scenario.vehicles:
         raise HTTPException(status_code=404, detail="Actor not found")
     dimensions = scenario.dimensions[name]
+    if "interpolation_mode" in payload:
+        try:
+            mode = validate_interpolation_mode(str(payload["interpolation_mode"]))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        dimensions.interpolation_mode = mode
+        scenario.default_interpolation_mode = mode
     for key in ("length_m", "width_m", "height_m"):
         if key in payload:
             value = float(payload[key])

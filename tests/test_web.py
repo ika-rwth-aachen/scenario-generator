@@ -1,5 +1,6 @@
 import asyncio
 import json
+import math
 from pathlib import Path
 from tempfile import SpooledTemporaryFile
 from xml.etree import ElementTree as ET
@@ -11,6 +12,52 @@ from starlette.requests import Request
 
 import scenario_generator.webapp.server as web_server
 from scenario_generator.map.map import LaneCrossSection, MapPolyline
+from scenario_generator.scenario_elements.road_user.trajectory import TRAJECTORY_INTERPOLATION_MODES
+
+
+def test_web_interpolation_is_per_actor_and_new_actors_inherit_last_choice(monkeypatch):
+    scenario = web_server.WebScenario()
+    monkeypatch.setattr(web_server, "scenario", scenario)
+    assert scenario.dimensions["vehicle_1"].interpolation_mode == "hermite"
+    web_server.update_actor("vehicle_1", {"interpolation_mode": "linear_velocity"})
+    assert scenario.dimensions["vehicle_2"].interpolation_mode == "hermite"
+    assert scenario.dimensions[scenario.add_actor()].interpolation_mode == "linear_velocity"
+    web_server.update_actor("vehicle_2", {"interpolation_mode": "catmull_rom"})
+    assert scenario.dimensions["vehicle_1"].interpolation_mode == "linear_velocity"
+    assert scenario.dimensions[scenario.add_actor()].interpolation_mode == "catmull_rom"
+    with pytest.raises(HTTPException, match="Unsupported trajectory interpolation"):
+        web_server.update_actor("vehicle_1", {"interpolation_mode": "unknown"})
+    assert scenario.dimensions["vehicle_1"].interpolation_mode == "linear_velocity"
+    assert scenario.default_interpolation_mode == "catmull_rom"
+    assert web_server.WebScenario().default_interpolation_mode == "hermite"
+
+
+@pytest.mark.parametrize("mode", TRAJECTORY_INTERPOLATION_MODES)
+def test_web_canvas_and_xosc_use_the_same_interpolated_positions(monkeypatch, mode):
+    from scenario_generator.io.importer_exporter.openscenario import build_openscenario_xml
+
+    scenario = web_server.WebScenario()
+    monkeypatch.setattr(web_server, "scenario", scenario)
+    snapshot = web_server.update_actor("vehicle_1", {"interpolation_mode": mode})
+    curve = snapshot["actors"][0]["curve"]
+    payload = scenario.trajectory_payload()
+    for field in ("time_s", "x_m", "y_m", "speed_mps"):
+        assert payload["vehicle_1"][field] == curve[field]
+    root = build_openscenario_xml(payload).getroot()
+    vertices = root.findall(".//Trajectory[@name='vehicle_1_trajectory']//Vertex")
+    positions = [vertex.find("./Position/WorldPosition").attrib for vertex in vertices]
+    for i, vertex in enumerate(vertices):
+        assert float(vertex.attrib["time"]) == pytest.approx(curve["time_s"][i], abs=1e-6)
+        # XOSC uses the entity origin, while canvas waypoints use its box centre.
+        assert float(positions[i]["x"]) + scenario.dimensions["vehicle_1"].length_m / 2 == pytest.approx(curve["x_m"][i], abs=1e-6)
+        assert float(positions[i]["y"]) == pytest.approx(curve["y_m"][i], abs=1e-6)
+    speeds = [
+        math.hypot(float(b["x"]) - float(a["x"]), float(b["y"]) - float(a["y"]))
+        / (float(v1.attrib["time"]) - float(v0.attrib["time"]))
+        for a, b, v0, v1 in zip(positions, positions[1:], vertices, vertices[1:])
+    ]
+    if mode != "catmull_rom":
+        assert speeds == pytest.approx([13.33] * len(speeds), abs=0.001)
 
 
 def request_with_scheme(scheme: str, root_path: str = "") -> Request:
